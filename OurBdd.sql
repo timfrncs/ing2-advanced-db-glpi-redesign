@@ -459,8 +459,9 @@ GRANT SELECT ON glpi_networks       TO R_GLPI_READ;
 GRANT SELECT ON glpi_computers      TO R_GLPI_READ;
 GRANT SELECT ON glpi_printers       TO R_GLPI_READ;
 GRANT SELECT ON glpi_ipaddresses    TO R_GLPI_READ;
-GRANT SELECT ON glpi_datacenters    TO R_GLPI_READ;
+GRANT SELECT ON glpi_equipments    TO R_GLPI_READ;
 GRANT SELECT ON glpi_profilerights  TO R_GLPI_READ;
+GRANT SELECT ON glpi_ptickets  TO R_GLPI_READ;
 
 -- ---- DML sur les actifs (parc materiel) -> R_GLPI_TECH ----------------------
 -- Les techniciens peuvent ajouter / modifier / supprimer une machine, une
@@ -475,7 +476,7 @@ GRANT SELECT ON glpi_profilerights  TO R_GLPI_READ;
 GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_computers   TO R_GLPI_TECH;
 GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_printers    TO R_GLPI_TECH;
 GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_ipaddresses TO R_GLPI_TECH;
-GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_datacenters TO R_GLPI_TECH;
+GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_equipment TO R_GLPI_TECH;
 
 -- ---- R_GLPI_ADMIN = cumul des deux ------------------------------------------
 -- Un role peut recevoir un autre role : R_GLPI_ADMIN herite ainsi de tous
