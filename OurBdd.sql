@@ -428,9 +428,6 @@ ALTER TABLE glpi_printers ADD CONSTRAINT fk_print_user FOREIGN KEY (users_id) RE
 
 ALTER TABLE glpi_ipaddresses ADD CONSTRAINT fk_ip_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
 
-ALTER TABLE glpi_datacenters ADD CONSTRAINT fk_dc_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
-ALTER TABLE glpi_datacenters ADD CONSTRAINT fk_dc_location FOREIGN KEY (locations_id) REFERENCES glpi_locations(id);
-
 ALTER TABLE glpi_profilerights ADD CONSTRAINT fk_profrights_profile FOREIGN KEY (profiles_id) REFERENCES glpi_profiles(id);
 
 -- =============================================================================
