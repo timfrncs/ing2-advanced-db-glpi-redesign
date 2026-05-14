@@ -327,19 +327,23 @@ PARTITION BY LIST (entities_id) (
 -- Cergy / Pau -> profite du partition pruning et garde l'isolation IO.
 
 -- Index Uniques --------------------------------------------------------------
-CREATE UNIQUE INDEX uk_ent_id_name        ON glpi_entities      (entities_id, name) TABLESPACE TS_GLPI_INDX;
+-- =================================================================
+-- 3. CREATION DES INDEX (Corrigés pour correspondre aux tables)
+-- =================================================================
+
+-- Tous les index applicatifs vont dans TS_GLPI_INDX.
+
+-- Index Uniques --------------------------------------------------------------
+-- uk_ent_id_name supprimé : la colonne entities_id n'existe pas dans glpi_entities
+CREATE UNIQUE INDEX uk_ent_name           ON glpi_entities      (name) TABLESPACE TS_GLPI_INDX;
 CREATE UNIQUE INDEX uk_loc_ent_loc_name   ON glpi_locations     (entities_id, locations_id, name) TABLESPACE TS_GLPI_INDX;
 CREATE UNIQUE INDEX uk_profrights_prof_name ON glpi_profilerights (profiles_id, name) TABLESPACE TS_GLPI_INDX;
 
--- Index glpi_entities --------------------------------------------------------
-CREATE INDEX idx_ent_lvl ON glpi_entities (lvl) TABLESPACE TS_GLPI_INDX;
-
--- Index glpi_tickets --------------------------------------------------------
-CREATE INDEX idx_tick_ent_id ON glpi_tickets (entities_id)TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_tick_recipient ON glpi_tickets (users_id_recipient)TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_tick_status ON glpi_tickets (status)TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_tick_loc_id ON glpi_tickets (locations_id)TABLESPACE TS_GLPI_INDX;
-
+-- Index glpi_tickets ---------------------------------------------------------
+CREATE INDEX idx_tick_ent_id   ON glpi_tickets (entities_id)  TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_tick_users_id ON glpi_tickets (users_id)     TABLESPACE TS_GLPI_INDX; -- Corrigé : users_id
+CREATE INDEX idx_tick_status   ON glpi_tickets (status)       TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_tick_loc_id   ON glpi_tickets (locations_id) TABLESPACE TS_GLPI_INDX;
 
 -- Index glpi_locations -------------------------------------------------------
 CREATE INDEX idx_loc_loc_id ON glpi_locations (locations_id) TABLESPACE TS_GLPI_INDX;
@@ -347,10 +351,10 @@ CREATE INDEX idx_loc_name   ON glpi_locations (name)         TABLESPACE TS_GLPI_
 CREATE INDEX idx_loc_lvl    ON glpi_locations (lvl)          TABLESPACE TS_GLPI_INDX;
 
 -- Index glpi_users -----------------------------------------------------------
-CREATE INDEX idx_usr_realname  ON glpi_users (realname)    TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_usr_ent_id    ON glpi_users (entities_id) TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_usr_realname  ON glpi_users (realname)     TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_usr_ent_id    ON glpi_users (entities_id)  TABLESPACE TS_GLPI_INDX;
 CREATE INDEX idx_usr_loc_id    ON glpi_users (locations_id) TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_usr_is_active ON glpi_users (is_active)   TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_usr_is_active ON glpi_users (is_active)    TABLESPACE TS_GLPI_INDX;
 
 -- Index glpi_profiles --------------------------------------------------------
 CREATE INDEX idx_prof_name ON glpi_profiles (name) TABLESPACE TS_GLPI_INDX;
@@ -363,31 +367,28 @@ CREATE INDEX idx_pu_usr_id  ON glpi_profiles_users (users_id)    TABLESPACE TS_G
 -- Index glpi_networks --------------------------------------------------------
 CREATE INDEX idx_net_name ON glpi_networks (name) TABLESPACE TS_GLPI_INDX;
 
--- Index glpi_equipement --------------------------------------------------------
-CREATE INDEX idx_equip_loc ON glpi_equipments (locations_id) TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_equip_ent ON glpi_equipments (entities_id) TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_equip_ip ON glpi_equipments (ipaddresses_id) TABLESPACE TS_GLPI_INDX;
+-- Index glpi_equipments (Table Mère) -----------------------------------------
+-- C'est ici que se trouvent désormais les liens géographiques et réseaux
+CREATE INDEX idx_equip_name ON glpi_equipments (name)           TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_equip_loc  ON glpi_equipments (locations_id)   TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_equip_ent  ON glpi_equipments (entities_id)    TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_equip_ip   ON glpi_equipments (ipaddresses_id) TABLESPACE TS_GLPI_INDX;
 
+-- Index glpi_computers (Table Enfant) ----------------------------------------
+-- Indexation uniquement sur ses colonnes propres (sans clause LOCAL)
+CREATE INDEX idx_comp_serial  ON glpi_computers (serial)        TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_comp_usr_tch ON glpi_computers (users_id_tech) TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_comp_usr     ON glpi_computers (users_id)      TABLESPACE TS_GLPI_INDX;
 
--- Index glpi_computers (table partitionnee -> LOCAL) -------------------------
-CREATE INDEX idx_comp_name    ON glpi_computers (name)         LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_comp_ent_id  ON glpi_equipments (entities_id)  LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_comp_serial  ON glpi_computers (serial)       LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_comp_loc_id  ON glpi_equipments (locations_id) LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_comp_net_id  ON glpi_equipments (networks_id)  LOCAL TABLESPACE TS_GLPI_INDX;
+-- Index glpi_printers (Table Enfant) -----------------------------------------
+CREATE INDEX idx_print_serial  ON glpi_printers (serial)        TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_print_usr_tch ON glpi_printers (users_id_tech) TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_print_usr     ON glpi_printers (users_id)      TABLESPACE TS_GLPI_INDX;
 
--- Index glpi_printers (table partitionnee -> LOCAL) --------------------------
-CREATE INDEX idx_print_name    ON glpi_printers (name)         LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_print_ent_id  ON glpi_printers (entities_id)  LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_print_serial  ON glpi_printers (serial)       LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_print_loc_id  ON glpi_printers (locations_id) LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_print_net_id  ON glpi_printers (networks_id)  LOCAL TABLESPACE TS_GLPI_INDX;
-
--- Index glpi_ipaddresses (table partitionnee -> LOCAL) -----------------------
-CREATE INDEX idx_ip_name     ON glpi_ipaddresses (name)        LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_ip_ent_id   ON glpi_ipaddresses (entities_id) LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_ip_item     ON glpi_ipaddresses (itemtype, items_id)         LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_ip_mainitem ON glpi_ipaddresses (mainitemtype, mainitems_id) LOCAL TABLESPACE TS_GLPI_INDX;
+-- Index glpi_ipaddresses -----------------------------------------------------
+-- Indexation uniquement sur ses colonnes propres
+CREATE INDEX idx_ip_name    ON glpi_ipaddresses (name)        TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_ip_net_id  ON glpi_ipaddresses (networks_id) TABLESPACE TS_GLPI_INDX;
 
 -- Index glpi_profilerights ---------------------------------------------------
 CREATE INDEX idx_profright_name ON glpi_profilerights (name) TABLESPACE TS_GLPI_INDX;
