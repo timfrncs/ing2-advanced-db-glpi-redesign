@@ -371,10 +371,10 @@ CREATE INDEX idx_equip_ip ON glpi_equipments (ipaddresses_id) TABLESPACE TS_GLPI
 
 -- Index glpi_computers (table partitionnee -> LOCAL) -------------------------
 CREATE INDEX idx_comp_name    ON glpi_computers (name)         LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_comp_ent_id  ON glpi_computers (entities_id)  LOCAL TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_comp_ent_id  ON glpi_equipments (entities_id)  LOCAL TABLESPACE TS_GLPI_INDX;
 CREATE INDEX idx_comp_serial  ON glpi_computers (serial)       LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_comp_loc_id  ON glpi_computers (locations_id) LOCAL TABLESPACE TS_GLPI_INDX;
-CREATE INDEX idx_comp_net_id  ON glpi_computers (networks_id)  LOCAL TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_comp_loc_id  ON glpi_equipments (locations_id) LOCAL TABLESPACE TS_GLPI_INDX;
+CREATE INDEX idx_comp_net_id  ON glpi_equipments (networks_id)  LOCAL TABLESPACE TS_GLPI_INDX;
 
 -- Index glpi_printers (table partitionnee -> LOCAL) --------------------------
 CREATE INDEX idx_print_name    ON glpi_printers (name)         LOCAL TABLESPACE TS_GLPI_INDX;
@@ -397,38 +397,58 @@ CREATE INDEX idx_profright_name ON glpi_profilerights (name) TABLESPACE TS_GLPI_
 -- 4. AJOUT DES CLES ETRANGERES (L'optimisation attendue par ton prof)
 -- =================================================================
 
+ALTER TABLE glpi_computers ADD CONSTRAINT fk_comp_inherit FOREIGN KEY (id) REFERENCES glpi_equipments(id) ON DELETE CASCADE;
+ALTER TABLE glpi_printers ADD CONSTRAINT fk_print_inherit FOREIGN KEY (id) REFERENCES glpi_equipments(id) ON DELETE CASCADE;
 
+-- Equipements (Table Mère)
+ALTER TABLE glpi_equipments ADD CONSTRAINT fk_equip_ent FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
+ALTER TABLE glpi_equipments ADD CONSTRAINT fk_equip_loc FOREIGN KEY (locations_id) REFERENCES glpi_locations(id);
+ALTER TABLE glpi_equipments ADD CONSTRAINT fk_equip_ip FOREIGN KEY (ipaddresses_id) REFERENCES glpi_ipaddresses(id);
+
+-- Computers/Printers
+ALTER TABLE glpi_computers ADD CONSTRAINT fk_comp_user FOREIGN KEY (users_id) REFERENCES glpi_users(id);
+ALTER TABLE glpi_computers ADD CONSTRAINT fk_comp_tech FOREIGN KEY (users_id_tech) REFERENCES glpi_users(id);
+ALTER TABLE glpi_printers ADD CONSTRAINT fk_print_user FOREIGN KEY (users_id) REFERENCES glpi_users(id);
+ALTER TABLE glpi_printers ADD CONSTRAINT fk_print_tech FOREIGN KEY (users_id_tech) REFERENCES glpi_users(id);
+
+-- Tickets
+ALTER TABLE glpi_tickets ADD CONSTRAINT fk_tick_equip FOREIGN KEY (equipment_id) REFERENCES glpi_equipments(id);
 ALTER TABLE glpi_tickets ADD CONSTRAINT fk_tick_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
-ALTER TABLE glpi_tickets ADD CONSTRAINT fk_tick_user_recip FOREIGN KEY (users_id_recipient) REFERENCES glpi_users(id);
 ALTER TABLE glpi_tickets ADD CONSTRAINT fk_tick_location FOREIGN KEY (locations_id) REFERENCES glpi_locations(id);
+ALTER TABLE glpi_tickets ADD CONSTRAINT fk_tick_user FOREIGN KEY (users_id) REFERENCES glpi_users(id);
 
+-- IP et Réseaux
+ALTER TABLE glpi_ipaddresses ADD CONSTRAINT fk_ip_net FOREIGN KEY (networks_id) REFERENCES glpi_networks(id);
+ALTER TABLE glpi_networks ADD CONSTRAINT fk_net_ent FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
 
-ALTER TABLE glpi_entities ADD CONSTRAINT fk_ent_parent FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
-
+-- Autres liaisons transverses
 ALTER TABLE glpi_locations ADD CONSTRAINT fk_loc_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
 ALTER TABLE glpi_locations ADD CONSTRAINT fk_loc_parent FOREIGN KEY (locations_id) REFERENCES glpi_locations(id);
-
 ALTER TABLE glpi_users ADD CONSTRAINT fk_usr_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
 ALTER TABLE glpi_users ADD CONSTRAINT fk_usr_location FOREIGN KEY (locations_id) REFERENCES glpi_locations(id);
-
 ALTER TABLE glpi_profiles_users ADD CONSTRAINT fk_pu_user FOREIGN KEY (users_id) REFERENCES glpi_users(id);
 ALTER TABLE glpi_profiles_users ADD CONSTRAINT fk_pu_profile FOREIGN KEY (profiles_id) REFERENCES glpi_profiles(id);
 ALTER TABLE glpi_profiles_users ADD CONSTRAINT fk_pu_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
-
-ALTER TABLE glpi_computers ADD CONSTRAINT fk_comp_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
-ALTER TABLE glpi_computers ADD CONSTRAINT fk_comp_location FOREIGN KEY (locations_id) REFERENCES glpi_locations(id);
-ALTER TABLE glpi_computers ADD CONSTRAINT fk_comp_network FOREIGN KEY (networks_id) REFERENCES glpi_networks(id);
-ALTER TABLE glpi_computers ADD CONSTRAINT fk_comp_user FOREIGN KEY (users_id) REFERENCES glpi_users(id);
-ALTER TABLE glpi_computers ADD CONSTRAINT fk_comp_tech FOREIGN KEY (users_id_tech) REFERENCES glpi_users(id);
-
-ALTER TABLE glpi_printers ADD CONSTRAINT fk_print_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
-ALTER TABLE glpi_printers ADD CONSTRAINT fk_print_location FOREIGN KEY (locations_id) REFERENCES glpi_locations(id);
-ALTER TABLE glpi_printers ADD CONSTRAINT fk_print_network FOREIGN KEY (networks_id) REFERENCES glpi_networks(id);
-ALTER TABLE glpi_printers ADD CONSTRAINT fk_print_user FOREIGN KEY (users_id) REFERENCES glpi_users(id);
-
-ALTER TABLE glpi_ipaddresses ADD CONSTRAINT fk_ip_entity FOREIGN KEY (entities_id) REFERENCES glpi_entities(id);
-
 ALTER TABLE glpi_profilerights ADD CONSTRAINT fk_profrights_profile FOREIGN KEY (profiles_id) REFERENCES glpi_profiles(id);
+
+-- =================================================================
+-- 7. CONTRAINTES DE VALIDATION (CHECK)
+-- =================================================================
+-- Restreindre le type d'équipement dans la table mère
+ALTER TABLE glpi_equipments ADD CONSTRAINT chk_equip_itemtype 
+  CHECK (itemtype IN ('Computer', 'Printer'));
+
+-- Exemple de statuts de matériel (ex: 1=En service, 2=En stock, 3=En réparation, 4=Rebut)
+ALTER TABLE glpi_computers ADD CONSTRAINT chk_comp_states 
+  CHECK (states_id IN (1, 2, 3, 4));
+ALTER TABLE glpi_printers ADD CONSTRAINT chk_print_states 
+  CHECK (states_id IN (1, 2, 3, 4));
+
+-- Exemple de statuts pour les tickets (ex: 1=Nouveau, 2=En cours, 3=En attente, 4=Résolu, 5=Clos)
+ALTER TABLE glpi_tickets ADD CONSTRAINT chk_tick_status 
+  CHECK (status IN (1, 2, 3, 4, 5));
+
+
 
 -- =============================================================================
 -- 5. GRANTS sur les tables (droits OBJETS)
