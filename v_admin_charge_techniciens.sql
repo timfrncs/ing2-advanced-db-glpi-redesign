@@ -1,0 +1,7 @@
+CREATE OR REPLACE VIEW v_admin_charge_techniciens AS
+SELECT *
+FROM mv_charge_techniciens
+WHERE UPPER(site) = SUBSTR(
+    SYS_CONTEXT('USERENV', 'CLIENT_IDENTIFIER'),
+    INSTR(SYS_CONTEXT('USERENV', 'CLIENT_IDENTIFIER'), '|') + 1
+);
