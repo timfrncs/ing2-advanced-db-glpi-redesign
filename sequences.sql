@@ -49,8 +49,17 @@ CREATE SEQUENCE seq_locations_name
 
 -- 5. ADRESSES IP (Partie Hôte)
 -- à compléter avec le nom du network ( 10.1.0.X pour cergy par exemple et 10.2.0.X pour pau ) 
-DROP SEQUENCE seq_ip_host;
-CREATE SEQUENCE seq_ip_host 
+
+DROP SEQUENCE seq_ip_host_cergy;
+CREATE SEQUENCE seq_ip_host_cergy
+    START WITH 1 
+    INCREMENT BY 1 M
+    AXVALUE 254 
+    CYCLE 
+    NOCACHE;
+
+DROP SEQUENCE seq_ip_host_pau;
+CREATE SEQUENCE seq_ip_host_pau   
     START WITH 1 
     INCREMENT BY 1 
     MAXVALUE 254 
