@@ -24,7 +24,7 @@ SELECT
     t.id                                        AS ticket_id,
     t.name                                      AS sujet_ticket,
     t.date_issue,
-    ROUND(CURRENT_TIMESTAMP - t.date_issue)     AS jours_ouverts,
+    TRUNC(SYSDATE - CAST(t.date_issue AS DATE)) AS jours_ouverts,
     CASE t.status
         WHEN 1 THEN 'Nouveau'
         WHEN 2 THEN 'En cours'

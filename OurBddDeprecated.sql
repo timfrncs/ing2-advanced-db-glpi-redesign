@@ -411,7 +411,7 @@ CREATE INDEX idx_profright_name ON glpi_profilerights (name) TABLESPACE TS_GLPI_
 
 
 -- =================================================================
--- 4. AJOUT DES CLES ETRANGERES (L'optimisation attendue par ton prof)
+-- 4. AJOUT DES CLES ETRANGERES 
 -- =================================================================
 
 -- Note : fk_comp_inherit et fk_print_inherit sont declarees INLINE dans le
@@ -465,6 +465,27 @@ ALTER TABLE glpi_printers ADD CONSTRAINT chk_print_states
 -- Exemple de statuts pour les tickets (ex: 1=Nouveau, 2=En cours, 3=En attente, 4=Résolu, 5=Clos)
 ALTER TABLE glpi_tickets ADD CONSTRAINT chk_tick_status 
   CHECK (status IN (1, 2, 3, 4, 5));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

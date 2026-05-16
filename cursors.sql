@@ -76,10 +76,10 @@ CREATE OR REPLACE PROCEDURE rapport_equipements_site (p_id_site IN NUMBER) IS
                l.name AS location_name,
                u_tech.realname AS tech_nom,
                CASE NVL(c.states_id, pr.states_id)
-                   WHEN 1 THEN 'Opérationnel'
-                   WHEN 2 THEN 'En maintenance'
-                   WHEN 3 THEN 'En panne'
-                   WHEN 4 THEN 'Au rebut'
+                   WHEN 1 THEN 'En service'
+                   WHEN 2 THEN 'En stock'
+                   WHEN 3 THEN 'En réparation'
+                   WHEN 4 THEN 'Rebut'
                    ELSE 'Inconnu'
                END AS etat_materiel,
                -- Uniquement les tickets en attente d'action

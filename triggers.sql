@@ -134,7 +134,7 @@ BEGIN
           'Lieu inexistant pour l equipement : locations_id=' || :NEW.locations_id);
     END;
     IF v_loc_ent <> :NEW.entities_id THEN
-      RAISE_APPLICATION_ERROR(-20010,
+      RAISE_APPLICATION_ERROR(-20004,
         'Equipement entities_id=' || :NEW.entities_id ||
         ' incoherent avec glpi_locations.entities_id=' || v_loc_ent ||
         ' (locations_id=' || :NEW.locations_id || ')');
@@ -217,18 +217,16 @@ BEGIN
   END IF;
 
   IF NOT INSERTING THEN
-    v_old := 'id=' || :OLD.id ||
-             ';name=' || :OLD.name ||
-             ';ent=' || :OLD.entities_id ||
-             ';par=' || NVL(TO_CHAR(:OLD.locations_id), 'NULL') ||
-             ';lvl=' || :OLD.lvl;
+    v_old := 'id='   || :OLD.id          ||
+             ';name=' || :OLD.name        ||
+             ';lvl='  || :OLD.lvl         ||
+             ';ent='  || :OLD.entities_id;
   END IF;
   IF NOT DELETING THEN
-    v_new := 'id=' || :NEW.id ||
-             ';name=' || :NEW.name ||
-             ';ent=' || :NEW.entities_id ||
-             ';par=' || NVL(TO_CHAR(:NEW.locations_id), 'NULL') ||
-             ';lvl=' || :NEW.lvl;
+    v_new := 'id='   || :NEW.id          ||
+             ';name=' || :NEW.name        ||
+             ';lvl='  || :NEW.lvl         ||
+             ';ent='  || :NEW.entities_id;
   END IF;
 
   pkg_audit.log_change('glpi_locations', v_id, v_act, v_old, v_new);

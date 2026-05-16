@@ -45,12 +45,11 @@ BEGIN
     RETURNING id INTO v_user_id;
 
     -- Insérer dans glpi_profiles_users
-    INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id, is_recursive)
+    INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id)
     VALUES (
         v_user_id,
         (SELECT id FROM glpi_profiles WHERE UPPER(name) = 'TECHNICIEN'),
-        v_entities_id,
-        0   -- droits sur ce site uniquement
+        v_entities_id
     );
 
     -- Répartir les équipements
