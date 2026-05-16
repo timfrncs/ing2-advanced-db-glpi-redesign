@@ -6,21 +6,40 @@ CREATE OR REPLACE PROCEDURE affecter_localisation_equipement(
     v_entities_id   NUMBER;
     v_location_id   NUMBER;
 BEGIN
-    -- Récupérer l'équipement
-    SELECT id, entities_id
-    INTO v_equip_id, v_entities_id
-    FROM glpi_equipments
-    WHERE UPPER(name) = UPPER(p_equip_name)
-    AND ROWNUM = 1;
+    -- ----------------------------------------------------
+    -- 1. Récupérer l'équipement
+    -- ----------------------------------------------------
+    BEGIN
+        SELECT id, entities_id
+        INTO v_equip_id, v_entities_id
+        FROM glpi_equipments
+        WHERE UPPER(name) = UPPER(p_equip_name)
+        AND ROWNUM = 1;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20091, 'Erreur : L''équipement [' || p_equip_name || '] n''existe pas dans la base.');
+    END;
 
-    -- Trouver la salle sur le même site que l'équipement
-    -- (unicité du nom garantie par la séquence, pas besoin de ROWNUM)
-    SELECT id INTO v_location_id
-    FROM glpi_locations
-    WHERE UPPER(name) = UPPER(p_salle_name)
-    AND entities_id   = v_entities_id;
+    -- ----------------------------------------------------
+    -- 2. Trouver la salle (avec vérification du site)
+    -- ----------------------------------------------------
+    BEGIN
+        SELECT id INTO v_location_id
+        FROM glpi_locations
+        WHERE UPPER(name) = UPPER(p_salle_name)
+        AND entities_id   = v_entities_id;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            -- Le message est maintenant ultra-précis !
+            RAISE_APPLICATION_ERROR(-20092, 'Erreur : La salle [' || p_salle_name || '] est introuvable sur le même site que l''équipement.');
+        -- On ajoute une sécurité au cas où deux salles s'appelleraient pareil sur le même site
+        WHEN TOO_MANY_ROWS THEN
+            RAISE_APPLICATION_ERROR(-20093, 'Erreur : Plusieurs salles portent le nom [' || p_salle_name || '] sur ce site. Casse-tête d''architecture !');
+    END;
 
-    -- Mettre à jour
+    -- ----------------------------------------------------
+    -- 3. Mise à jour de l'équipement
+    -- ----------------------------------------------------
     UPDATE glpi_equipments
     SET locations_id = v_location_id
     WHERE id = v_equip_id;
@@ -30,9 +49,9 @@ BEGIN
                          ' affecté à la salle ' || p_salle_name);
 
 EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RAISE_APPLICATION_ERROR(-20090,
-            'Équipement ou salle introuvable : ' ||
-            p_equip_name || ' / ' || p_salle_name);
+    -- Gestion globale pour toute autre erreur SQL inattendue (ex: base déconnectée)
+    WHEN OTHERS THEN
+        ROLLBACK; -- TRÈS IMPORTANT : On annule tout s'il y a un crash grave
+        RAISE_APPLICATION_ERROR(-20099, 'Erreur inattendue : ' || SQLERRM);
 END;
 /
