@@ -86,8 +86,9 @@ CREATE TABLESPACE TS_GLPI_INDX
 CREATE ROLE R_GLPI_READ;
 CREATE ROLE R_GLPI_TECH;
 CREATE ROLE R_GLPI_ADMIN;
+CREATE ROLE R_GLPI_TICKET_HELP;
 
-GRANT CREATE SESSION TO R_GLPI_READ, R_GLPI_TECH, R_GLPI_ADMIN;
+GRANT CREATE SESSION TO R_GLPI_READ, R_GLPI_TECH, R_GLPI_ADMIN, R_GLPI_TICKET_HELP;
 
 
 -- =============================================================================
@@ -140,11 +141,13 @@ CREATE USER GLPI_ADMIN      IDENTIFIED BY "Admin2026" DEFAULT TABLESPACE TS_GLPI
 CREATE USER GLPI_TECH_CERGY IDENTIFIED BY "Cergy2026" DEFAULT TABLESPACE TS_GLPI_CERGY;
 CREATE USER GLPI_TECH_PAU   IDENTIFIED BY "Pau2026"   DEFAULT TABLESPACE TS_GLPI_PAU;
 CREATE USER GLPI_READ       IDENTIFIED BY "Read2026"  DEFAULT TABLESPACE TS_GLPI_REF;
+CREATE USER GLPI_HELP       IDENTIFIED BY "Help2026"  DEFAULT TABLESPACE TS_GLPI_REF;
 
 GRANT R_GLPI_ADMIN              TO GLPI_ADMIN;
 GRANT R_GLPI_TECH, R_GLPI_READ  TO GLPI_TECH_CERGY;
 GRANT R_GLPI_TECH, R_GLPI_READ  TO GLPI_TECH_PAU;
 GRANT R_GLPI_READ               TO GLPI_READ;
+GRANT R_GLPI_TICKET_HELP       TO GLPI_HELP;
 
 
 -- =============================================================================
@@ -511,9 +514,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_equipments  TO R_GLPI_TECH;
 -- pour la tracabilite / le reporting (cf. trigger d'historique).
 GRANT SELECT, INSERT, UPDATE ON glpi_tickets TO R_GLPI_TECH;
 
+GRANT SELECT, INSERT ON glpi_tickets TO R_GLPI_TICKET_HELP;
+
 -- ---- R_GLPI_ADMIN = cumul des deux ------------------------------------------
 -- Un role peut recevoir un autre role : R_GLPI_ADMIN herite ainsi de tous
 -- les droits objets de R_GLPI_READ et R_GLPI_TECH, sans qu on ait a recopier
 -- la liste des GRANTs. Si demain on ajoute une table et qu on grant au role
 -- READ, l admin l aura aussi automatiquement.
 GRANT R_GLPI_READ, R_GLPI_TECH TO R_GLPI_ADMIN;
+GRANT R_GLPI_TICKET_HELP TO R_GLPI_ADMIN;
