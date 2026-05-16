@@ -189,8 +189,8 @@ CREATE TABLE glpi_entities (
 )
 TABLESPACE TS_GLPI_REF;
 
-INSERT INTO glpi_entities (id, name) OVERRIDING SYSTEM VALUE VALUES (1, 'CY Tech - Cergy');
-INSERT INTO glpi_entities (id, name) OVERRIDING SYSTEM VALUE VALUES (2, 'CY Tech - Pau');
+INSERT INTO glpi_entities (id, name) OVERRIDING SYSTEM VALUE VALUES (1, 'CERGY');
+INSERT INTO glpi_entities (id, name) OVERRIDING SYSTEM VALUE VALUES (2, 'PAU');
 
 -- glpi_locations : une ligne de lieu appartient toujours a un site (entities_id).
 -- Partition LIST -> donnees physiques Cergy dans TS_GLPI_CERGY, Pau dans TS_GLPI_PAU
