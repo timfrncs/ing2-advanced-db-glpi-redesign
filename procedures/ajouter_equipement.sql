@@ -33,11 +33,12 @@ BEGIN
     AND ROWNUM = 1;
 
     -- Générer l'IP selon le site
-
     IF v_site = 'CERGY' THEN
-    v_ip_address := '10.1.0.' || seq_ip_host_cergy.NEXTVAL;
+        v_ip_address := '10.1.0.' || seq_ip_host_cergy.NEXTVAL;
+        v_equip_name := 'EQ-' || seq_equip_cergy.NEXTVAL;
     ELSE
-    v_ip_address := '10.2.0.' || seq_ip_host_pau.NEXTVAL;
+        v_ip_address := '10.2.0.' || seq_ip_host_pau.NEXTVAL;
+        v_equip_name := 'EQ-' || seq_equip_pau.NEXTVAL;
     END IF;
 
     -- Insérer l'adresse IP
