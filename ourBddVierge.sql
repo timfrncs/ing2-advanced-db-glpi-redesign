@@ -298,3 +298,119 @@ INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-15');  -- Bibliot
 INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-16');  -- Salle Serveurs
 
 COMMIT;
+
+
+
+
+
+
+-- =============================================================================
+-- GLPI CY Tech - AUDIT DE PERFORMANCE V2 (INSERTS PURS + VUES METIER)
+-- =============================================================================
+
+-- Configuration du rendu SQL*Plus
+SET LINESIZE 200;
+SET PAGESIZE 2000;
+SET TRIMSPOOL ON;
+
+-- Enregistrement direct dans ton dossier cible  FIO A MODIFIER SELON VOTRE DOSSIER SOUHAITE 
+SPOOL C:\Users\fiori\Documents\cours\Ing2\TAD\rapport_performances.txt 
+
+PROMPT =========================================================================
+PROMPT RAPPORT D'AUDIT : ANALYSE DES INSERTS (PROCÉDURES D'AJOUT)
+PROMPT =========================================================================
+PROMPT 
+
+PROMPT === 1. SIMULATION : ajouter_admin / ajouter_technicien (Création de l'utilisateur) ===
+EXPLAIN PLAN FOR
+INSERT INTO glpi_users (pseudo, realname, firstname, is_active, entities_id) 
+VALUES ('ADMIN_TEST', 'NomAdmin', 'PrenomAdmin', 1, 1);
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT === 2. SIMULATION : ajouter_admin / ajouter_technicien (Attribution du rôle/profil) ===
+EXPLAIN PLAN FOR
+INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id) 
+VALUES (999, 1, 1);
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT === 3. SIMULATION : ajouter_utilisateur_lambda (Insertion d'un étudiant) ===
+EXPLAIN PLAN FOR
+INSERT INTO glpi_users (pseudo, realname, firstname, is_active, entities_id) 
+VALUES ('UC999', 'Etudiant', 'Test', 1, 1);
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT === 4. SIMULATION : ajouter_equipement (Création dans la table Mère) ===
+EXPLAIN PLAN FOR
+INSERT INTO glpi_equipments (name, itemtype, entities_id, locations_id) 
+VALUES ('EQ-TEST-99', 'Computer', 1, 1);
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT === 5. SIMULATION : ajouter_equipement (Création dans la table Fille - Héritage) ===
+EXPLAIN PLAN FOR
+INSERT INTO glpi_computers (id, serial, states_id) 
+VALUES (999, 'SN-REFAIT-01', 1);
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT === 6. SIMULATION : creer_ticket (Insertion du ticket Helpdesk) ===
+EXPLAIN PLAN FOR
+INSERT INTO glpi_tickets (name, content, status, entities_id, equipment_id, users_id)
+VALUES ('Panne Écran', 'Rien ne s affiche', 1, 1, 999, 999);
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT RAPPORT D'AUDIT : ANALYSE DES VUES MÉTIERS (TABLEAUX DE BORD)
+PROMPT =========================================================================
+PROMPT
+
+PROMPT === 7. VUE LOCAL : v_admin_charge_techniciens ===
+PROMPT (Analyse du code de la vue : Jointures triples + GROUP BY + COUNT)
+PROMPT (Très coûteux sans index car Oracle doit scanner et trier tout le parc)
+EXPLAIN PLAN FOR
+SELECT u.pseudo, COUNT(c.id) AS nb_ordinateurs
+FROM glpi_users u
+JOIN glpi_computers c ON u.id = c.users_id_tech
+JOIN glpi_equipments eq ON eq.id = c.id
+WHERE eq.entities_id = 1
+GROUP BY u.pseudo;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT === 8. VUE DISTRIBUÉE BDDR : v_global_equipements ===
+PROMPT (Analyse du code de la vue globale : Opérateur UNION ALL de rassemblement)
+EXPLAIN PLAN FOR
+SELECT id, name, itemtype, entities_id, 'LOCAL' AS localisation FROM glpi_equipments WHERE entities_id = 1
+UNION ALL
+SELECT id, name, itemtype, entities_id, 'DISTANT' AS localisation FROM glpi_equipments WHERE entities_id = 2;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT RAPPORT D'AUDIT : LES ALGORITHMES DE REPARTITION (UPDATE/SELECT)
+PROMPT =========================================================================
+PROMPT
+
+PROMPT === 9. SIMULATION : get_equip_technicien (UNION ALL sur tables filles) ===
+EXPLAIN PLAN FOR
+SELECT id FROM glpi_computers WHERE users_id_tech = 42
+UNION ALL
+SELECT id FROM glpi_printers WHERE users_id_tech = 42;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT === 10. SIMULATION : repartition_charge (NOT EXISTS + SOUS-REQUÊTE CORRÉLÉE) ===
+PROMPT (La requête la plus complexe : cherche les PC sans tickets bloquants)
+EXPLAIN PLAN FOR
+SELECT eq.id
+FROM glpi_equipments eq
+JOIN glpi_computers c ON c.id = eq.id
+WHERE c.users_id_tech = 42 AND eq.entities_id = 1
+AND NOT EXISTS (
+    SELECT 1 FROM glpi_tickets t
+    WHERE t.equipment_id = eq.id AND t.status IN (2, 3)
+);
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT =========================================================================
+PROMPT FIN DE L'AUDIT QUANTITATIF
+PROMPT =========================================================================
+
+SPOOL OFF;
