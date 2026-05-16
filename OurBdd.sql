@@ -11,7 +11,8 @@
 --   2.  CREATE des tables  -- DDL applicatif (livre par l equipe)
 --   3.  INDEX              -- index secondaires
 --   4.  CLES ETRANGERES    -- contraintes referentielles
---   5.  GRANTS sur tables  -- droits objets attribues aux roles
+--   5.  GRANTS applicatifs (vues / MV / procedures / synonymes) — meme session GLPI_OWNER
+--       apres creation des vues et procedures (voir views_procedures.sql ou bloc integre au split).
 -- =============================================================================
 
 
@@ -69,18 +70,15 @@ CREATE TABLESPACE TS_GLPI_INDX
 -- 0.b ROLES METIER
 -- =============================================================================
 -- Un ROLE = un sac de privileges nomme, qu on peut attribuer a plusieurs
--- utilisateurs. Si demain on ajoute la table glpi_tickets, on fera un seul
--- GRANT SELECT ON glpi_tickets TO R_GLPI_READ -> tous les comptes lecteurs
--- y auront acces, sans avoir a refaire le GRANT pour chacun.
+-- utilisateurs. Les droits sur les donnees sont accordes par le scenario
+-- (vues / procedures ; voir section 5 en fin de OurBdd.sql), pas par GRANT
+-- sur les tables pour ces roles.
 --
 -- On retient le PRINCIPE DU MOINDRE PRIVILEGE :
---   - R_GLPI_READ  : juste lire (reporting, consultation, BI).
---   - R_GLPI_TECH  : ajouter / modifier / supprimer des machines, ports IP,
---                    imprimantes, datacenters. Ne touche PAS aux referentiels
---                    ni aux comptes utilisateurs.
---   - R_GLPI_ADMIN : full DML, herite des deux roles ci-dessus (cf. fin du
---                    script ou le GRANT R_GLPI_READ, R_GLPI_TECH TO
---                    R_GLPI_ADMIN cumule les droits).
+--   - R_GLPI_READ  : lecture via vues autorisees (reporting, consultation).
+--   - R_GLPI_TECH  : procedures metier (parc, tickets selon doc) + vues tech.
+--   - R_GLPI_ADMIN : vues / procedures administration (cf. scenario).
+--   - R_GLPI_TICKET_HELP : creation ticket via procedure creer_ticket (scenario).
 -- =============================================================================
 
 CREATE ROLE R_GLPI_READ;
@@ -133,10 +131,10 @@ CREATE USER GLPI_OWNER IDENTIFIED BY "Owner2026"
 -- Privileges SYSTEME pour la creation du schema (DDL). Volontairement
 -- restreint : pas de DROP ANY TABLE, pas de GRANT ANY PRIVILEGE, etc.
 GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW, CREATE SEQUENCE,
-      CREATE PROCEDURE, CREATE TRIGGER TO GLPI_OWNER;
+      CREATE PROCEDURE, CREATE TRIGGER, CREATE PUBLIC SYNONYM TO GLPI_OWNER;
 
 -- Comptes applicatifs : pas de quota, pas de droits DDL. Ils n acceedent
--- aux tables que via les GRANTs de la section 5 (en bas du script).
+-- aux tables que via les procedures / vues (fichier scenario du projet).
 CREATE USER GLPI_ADMIN      IDENTIFIED BY "Admin2026" DEFAULT TABLESPACE TS_GLPI_REF;
 CREATE USER GLPI_TECH_CERGY IDENTIFIED BY "Cergy2026" DEFAULT TABLESPACE TS_GLPI_CERGY;
 CREATE USER GLPI_TECH_PAU   IDENTIFIED BY "Pau2026"   DEFAULT TABLESPACE TS_GLPI_PAU;
@@ -471,64 +469,83 @@ ALTER TABLE glpi_tickets ADD CONSTRAINT chk_tick_status
 
 
 -- =============================================================================
--- 5. GRANTS sur les tables (droits OBJETS)
+-- 5. Acces applicatif : GRANT sur vues / MV / procedures + synonymes publics
 -- =============================================================================
--- Les roles ont ete crees plus haut avec uniquement le privilege SYSTEME
--- CREATE SESSION. Ils n ont donc pour l instant aucun droit sur les tables
--- (les tables n existaient pas encore au moment du CREATE ROLE).
+-- Aucun GRANT sur les tables vers R_GLPI_* : moindre privilege, acces via
+-- procedures AUTHID DEFINER + vues (cf. Google Doc proc. p. 3-6).
 --
--- Ce bloc, execute APRES la creation des tables, attribue aux roles les
--- droits OBJETS (SELECT, INSERT, UPDATE, DELETE) sur chaque table. Ces
--- droits cascade automatiquement aux comptes qui ont le role :
---
---   * GLPI_READ          recoit R_GLPI_READ  -> SELECT sur toutes les tables.
---   * GLPI_TECH_CERGY    recoit R_GLPI_TECH  -> DML sur les actifs.
---   * GLPI_TECH_PAU      idem.
---   * GLPI_ADMIN         recoit R_GLPI_ADMIN -> herite des deux precedents.
+-- Ordre d execution : les CREATE VIEW / MATERIALIZED VIEW / PROCEDURE doivent
+-- exister avant les lignes GRANT ci-dessous. Si elles sont dans
+-- views_procedures.sql, executer ce fichier apres sequences/triggers puis
+-- soit re-executer uniquement cette section 5 (copie/colle), soit regrouper
+-- tout dans un seul script au moment du split fichier (comme convenu en equipe).
 -- =============================================================================
 
--- ---- Lecture sur l ensemble des tables -> R_GLPI_READ -----------------------
--- Tout role lecteur peut consulter n importe quelle table, y compris les
--- tables de securite (profilerights) pour pouvoir auditer les droits.
-GRANT SELECT ON glpi_entities       TO R_GLPI_READ;
-GRANT SELECT ON glpi_locations      TO R_GLPI_READ;
-GRANT SELECT ON glpi_users          TO R_GLPI_READ;
-GRANT SELECT ON glpi_profiles       TO R_GLPI_READ;
-GRANT SELECT ON glpi_profiles_users TO R_GLPI_READ;
-GRANT SELECT ON glpi_networks       TO R_GLPI_READ;
-GRANT SELECT ON glpi_computers      TO R_GLPI_READ;
-GRANT SELECT ON glpi_printers       TO R_GLPI_READ;
-GRANT SELECT ON glpi_ipaddresses    TO R_GLPI_READ;
-GRANT SELECT ON glpi_equipments    TO R_GLPI_READ;
-GRANT SELECT ON glpi_profilerights  TO R_GLPI_READ;
-GRANT SELECT ON glpi_tickets  TO R_GLPI_READ;
+-- -----------------------------------------------------------------------------
+-- 5.1 GRANTS SUR LES TABLES (aucun vers les roles applicatifs)
+-- -----------------------------------------------------------------------------
 
--- ---- DML sur les actifs (parc materiel) -> R_GLPI_TECH ----------------------
--- Les techniciens peuvent ajouter / modifier / supprimer une machine, une
--- imprimante, une IP, un datacenter. Ils NE TOUCHENT PAS aux referentiels
--- partages (entities, locations, profiles, networks) qui restent geres par
--- l administrateur.
---
--- Limitation assumee : un technicien Cergy peut techniquement inserer avec
--- entities_id = 2 (donc cote Pau). Le cloisonnement strict viendra avec les
--- VUES filtrees (V_COMPUTERS_CERGY WHERE entities_id=1 WITH CHECK OPTION)
--- ou un TRIGGER de controle, prevus dans les etapes ulterieures du projet.
-GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_computers   TO R_GLPI_TECH;
-GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_printers    TO R_GLPI_TECH;
-GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_ipaddresses TO R_GLPI_TECH;
-GRANT SELECT, INSERT, UPDATE, DELETE ON glpi_equipments  TO R_GLPI_TECH;
+-- -----------------------------------------------------------------------------
+-- 5.2 GRANTS SUR LES VUES ET VUES MATERIALISEES
+-- -----------------------------------------------------------------------------
+GRANT SELECT ON v_tech_tickets_actifs        TO R_GLPI_TECH;
 
--- Tickets : le technicien doit pouvoir creer, prendre en charge, faire
--- evoluer le statut. On NE donne PAS DELETE : un ticket cloture est conserve
--- pour la tracabilite / le reporting (cf. trigger d'historique).
-GRANT SELECT, INSERT, UPDATE ON glpi_tickets TO R_GLPI_TECH;
+GRANT SELECT ON v_admin_tickets_en_retard    TO R_GLPI_ADMIN;
+GRANT SELECT ON v_admin_equipements_inactifs TO R_GLPI_ADMIN;
+GRANT SELECT ON v_admin_charge_techniciens   TO R_GLPI_ADMIN;
+GRANT SELECT ON mv_charge_techniciens        TO R_GLPI_ADMIN;
+GRANT SELECT ON mv_read_parc_par_site        TO R_GLPI_ADMIN;
 
-GRANT SELECT, INSERT ON glpi_tickets TO R_GLPI_TICKET_HELP;
+GRANT SELECT ON v_read_tickets_non_resolus   TO R_GLPI_READ;
+GRANT SELECT ON mv_read_parc_par_site        TO R_GLPI_READ;
 
--- ---- R_GLPI_ADMIN = cumul des deux ------------------------------------------
--- Un role peut recevoir un autre role : R_GLPI_ADMIN herite ainsi de tous
--- les droits objets de R_GLPI_READ et R_GLPI_TECH, sans qu on ait a recopier
--- la liste des GRANTs. Si demain on ajoute une table et qu on grant au role
--- READ, l admin l aura aussi automatiquement.
-GRANT R_GLPI_READ, R_GLPI_TECH TO R_GLPI_ADMIN;
-GRANT R_GLPI_TICKET_HELP TO R_GLPI_ADMIN;
+-- -----------------------------------------------------------------------------
+-- 5.3 GRANTS SUR LES PROCEDURES (AUTHID DEFINER)
+-- -----------------------------------------------------------------------------
+GRANT EXECUTE ON ajouter_utilisateur_lambda        TO R_GLPI_ADMIN;
+GRANT EXECUTE ON ajouter_technicien                TO R_GLPI_ADMIN;
+GRANT EXECUTE ON ajouter_admin                     TO R_GLPI_ADMIN;
+GRANT EXECUTE ON supprimer_utilisateur_lambda      TO R_GLPI_ADMIN;
+GRANT EXECUTE ON supprimer_technicien              TO R_GLPI_ADMIN;
+GRANT EXECUTE ON supprimer_admin                   TO R_GLPI_ADMIN;
+GRANT EXECUTE ON ajouter_equipement                TO R_GLPI_ADMIN;
+GRANT EXECUTE ON changer_statut_equipement         TO R_GLPI_ADMIN;
+GRANT EXECUTE ON affecter_localisation_equipement  TO R_GLPI_ADMIN;
+GRANT EXECUTE ON affecter_technicien_equipement    TO R_GLPI_ADMIN;
+GRANT EXECUTE ON modifier_statut_ticket            TO R_GLPI_ADMIN;
+GRANT EXECUTE ON ajouter_lambda_autre_site         TO R_GLPI_ADMIN;
+GRANT EXECUTE ON ajouter_tech_ou_admin_autre_site  TO R_GLPI_ADMIN;
+
+GRANT EXECUTE ON ajouter_equipement                TO R_GLPI_TECH;
+GRANT EXECUTE ON changer_statut_equipement         TO R_GLPI_TECH;
+GRANT EXECUTE ON affecter_localisation_equipement  TO R_GLPI_TECH;
+GRANT EXECUTE ON modifier_statut_ticket            TO R_GLPI_TECH;
+
+GRANT EXECUTE ON creer_ticket                      TO R_GLPI_TICKET_HELP;
+
+-- -----------------------------------------------------------------------------
+-- 5.4 SYNONYMES PUBLICS (CREATE PUBLIC SYNONYM accorde a GLPI_OWNER en 0.c)
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE PUBLIC SYNONYM v_tech_tickets_actifs        FOR GLPI_OWNER.v_tech_tickets_actifs;
+CREATE OR REPLACE PUBLIC SYNONYM v_admin_tickets_en_retard    FOR GLPI_OWNER.v_admin_tickets_en_retard;
+CREATE OR REPLACE PUBLIC SYNONYM v_admin_equipements_inactifs FOR GLPI_OWNER.v_admin_equipements_inactifs;
+CREATE OR REPLACE PUBLIC SYNONYM v_admin_charge_techniciens   FOR GLPI_OWNER.v_admin_charge_techniciens;
+CREATE OR REPLACE PUBLIC SYNONYM v_read_tickets_non_resolus   FOR GLPI_OWNER.v_read_tickets_non_resolus;
+
+CREATE OR REPLACE PUBLIC SYNONYM mv_charge_techniciens FOR GLPI_OWNER.mv_charge_techniciens;
+CREATE OR REPLACE PUBLIC SYNONYM mv_read_parc_par_site FOR GLPI_OWNER.mv_read_parc_par_site;
+
+CREATE OR REPLACE PUBLIC SYNONYM ajouter_utilisateur_lambda       FOR GLPI_OWNER.ajouter_utilisateur_lambda;
+CREATE OR REPLACE PUBLIC SYNONYM ajouter_technicien               FOR GLPI_OWNER.ajouter_technicien;
+CREATE OR REPLACE PUBLIC SYNONYM ajouter_admin                    FOR GLPI_OWNER.ajouter_admin;
+CREATE OR REPLACE PUBLIC SYNONYM supprimer_utilisateur_lambda     FOR GLPI_OWNER.supprimer_utilisateur_lambda;
+CREATE OR REPLACE PUBLIC SYNONYM supprimer_technicien             FOR GLPI_OWNER.supprimer_technicien;
+CREATE OR REPLACE PUBLIC SYNONYM supprimer_admin                  FOR GLPI_OWNER.supprimer_admin;
+CREATE OR REPLACE PUBLIC SYNONYM ajouter_equipement               FOR GLPI_OWNER.ajouter_equipement;
+CREATE OR REPLACE PUBLIC SYNONYM changer_statut_equipement         FOR GLPI_OWNER.changer_statut_equipement;
+CREATE OR REPLACE PUBLIC SYNONYM affecter_localisation_equipement FOR GLPI_OWNER.affecter_localisation_equipement;
+CREATE OR REPLACE PUBLIC SYNONYM affecter_technicien_equipement   FOR GLPI_OWNER.affecter_technicien_equipement;
+CREATE OR REPLACE PUBLIC SYNONYM modifier_statut_ticket           FOR GLPI_OWNER.modifier_statut_ticket;
+CREATE OR REPLACE PUBLIC SYNONYM ajouter_lambda_autre_site        FOR GLPI_OWNER.ajouter_lambda_autre_site;
+CREATE OR REPLACE PUBLIC SYNONYM ajouter_tech_ou_admin_autre_site FOR GLPI_OWNER.ajouter_tech_ou_admin_autre_site;
+CREATE OR REPLACE PUBLIC SYNONYM creer_ticket                     FOR GLPI_OWNER.creer_ticket;
