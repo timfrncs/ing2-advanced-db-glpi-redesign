@@ -1,9 +1,13 @@
--- ARCHITECTURE BDDR - CAMPUS CERGY si la ligne using ne marche pas taper SHOW PARAMETER service_names; et prendre la valeur affiché au lieu du free
+-- ARCHITECTURE BDDR - CAMPUS CERGY
+-- Ce fichier s'execute sur l'instance CERGY (en tant que SYS ou GLPI_OWNER).
+-- Le compte GLPI_DBLINK_PAU doit exister sur l'instance PAU avant d'executer ce fichier.
+-- Pour connaitre le service name : SHOW PARAMETER service_names;
+
 CREATE PUBLIC DATABASE LINK dblink_vers_pau
-CONNECT TO GLPI_TECH_PAU IDENTIFIED BY "Pau2026"
+CONNECT TO GLPI_DBLINK_PAU IDENTIFIED BY "DbPau2026!"
 USING 'localhost:1521/FREE';
 
---Vues globales réparties
+-- Vues globales réparties
 CREATE OR REPLACE VIEW v_global_equipements AS
     SELECT id, name, itemtype, locations_id, 'CERGY' AS site_origine
     FROM glpi_equipments
@@ -31,7 +35,4 @@ CREATE OR REPLACE VIEW v_global_tickets AS
     FROM glpi_tickets@dblink_vers_pau
     WHERE entities_id = 2;
 
--- Droits de lecture
-GRANT SELECT ON v_global_equipements TO R_GLPI_READ;
-GRANT SELECT ON v_global_users       TO R_GLPI_READ;
-GRANT SELECT ON v_global_tickets     TO R_GLPI_READ;
+-- Les GRANTs et synonymes publics sur ces vues sont centralises dans acces.sql.

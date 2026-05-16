@@ -41,9 +41,37 @@ GRANT SELECT ON mv_read_parc_par_site        TO R_GLPI_ADMIN;
 GRANT SELECT ON v_read_tickets_non_resolus   TO R_GLPI_READ;
 GRANT SELECT ON mv_read_parc_par_site        TO R_GLPI_READ;
 
+-- ---- Vues globales BDDR : vision inter-sites ---------------------------------
+-- v_global_* creees par bddr_cergy.sql / bddr_pau.sql (architecture distribuee).
+-- R_GLPI_ADMIN : supervision cross-campus (tickets, equipements, utilisateurs).
+-- R_GLPI_READ  : audit global tous sites.
+GRANT SELECT ON v_global_equipements         TO R_GLPI_ADMIN;
+GRANT SELECT ON v_global_users               TO R_GLPI_ADMIN;
+GRANT SELECT ON v_global_tickets             TO R_GLPI_ADMIN;
+
+GRANT SELECT ON v_global_equipements         TO R_GLPI_READ;
+GRANT SELECT ON v_global_users               TO R_GLPI_READ;
+GRANT SELECT ON v_global_tickets             TO R_GLPI_READ;
+
 
 -- =============================================================================
--- 2. GRANTS SUR LES PROCEDURES ET FONCTIONS
+-- 2. GRANTS BDDR : comptes de service des database links
+-- =============================================================================
+-- GLPI_DBLINK_CERGY et GLPI_DBLINK_PAU n'ont acces qu'aux trois tables lues
+-- par les vues globales (v_global_*). Aucun acces aux vues, procedures ou
+-- autres objets du schema.
+
+GRANT SELECT ON glpi_equipments TO GLPI_DBLINK_CERGY;
+GRANT SELECT ON glpi_users      TO GLPI_DBLINK_CERGY;
+GRANT SELECT ON glpi_tickets    TO GLPI_DBLINK_CERGY;
+
+GRANT SELECT ON glpi_equipments TO GLPI_DBLINK_PAU;
+GRANT SELECT ON glpi_users      TO GLPI_DBLINK_PAU;
+GRANT SELECT ON glpi_tickets    TO GLPI_DBLINK_PAU;
+
+
+-- =============================================================================
+-- 3. GRANTS SUR LES PROCEDURES ET FONCTIONS
 -- =============================================================================
 
 -- ---- R_GLPI_ADMIN : gestion des utilisateurs --------------------------------
@@ -78,7 +106,7 @@ GRANT EXECUTE ON creer_ticket                      TO R_GLPI_TICKET_HELP;
 
 
 -- =============================================================================
--- 3. SYNONYMES PUBLICS
+-- 4. SYNONYMES PUBLICS
 -- =============================================================================
 -- Permettent aux comptes applicatifs d appeler les objets sans prefixer
 -- GLPI_OWNER. Ex : SELECT * FROM v_tech_tickets_actifs au lieu de
@@ -156,3 +184,13 @@ CREATE OR REPLACE PUBLIC SYNONYM modifier_statut_ticket
 -- ---- Type (necessaire pour les procedures qui utilisent t_ids) --------------
 CREATE OR REPLACE PUBLIC SYNONYM t_ids
   FOR GLPI_OWNER.t_ids;
+
+-- ---- Vues globales BDDR (creees par bddr_cergy.sql / bddr_pau.sql) ----------
+CREATE OR REPLACE PUBLIC SYNONYM v_global_equipements
+  FOR GLPI_OWNER.v_global_equipements;
+
+CREATE OR REPLACE PUBLIC SYNONYM v_global_users
+  FOR GLPI_OWNER.v_global_users;
+
+CREATE OR REPLACE PUBLIC SYNONYM v_global_tickets
+  FOR GLPI_OWNER.v_global_tickets;
