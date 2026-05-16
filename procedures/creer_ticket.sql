@@ -27,6 +27,24 @@ BEGIN
             'Utilisateur introuvable ou inactif : id=' || p_users_id);
     END IF;
 
+    DECLARE
+    v_states_id NUMBER;
+    BEGIN
+        SELECT COALESCE(c.states_id, p.states_id)
+        INTO v_states_id
+        FROM glpi_equipments eq
+        LEFT JOIN glpi_computers c ON c.id = eq.id
+        LEFT JOIN glpi_printers  p ON p.id = eq.id
+        WHERE eq.id = v_equip_id;
+
+        IF v_states_id != 1 THEN
+            RAISE_APPLICATION_ERROR(-20025,
+                'Impossible de créer un ticket : l''équipement ' ||
+                p_equip_name || ' n''est pas en service (statut=' ||
+                v_states_id || ').');
+        END IF;
+    END;
+
     -- Générer le nom du ticket selon le site
     IF v_site = 'CERGY' THEN
         v_ticket_name := 'TKT-' || seq_ticket_cergy.NEXTVAL;
