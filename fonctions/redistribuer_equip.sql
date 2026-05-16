@@ -41,18 +41,16 @@ BEGIN
     FOR i IN 1..p_equip_ids.COUNT LOOP
         -- Déterminer dans quelle table mettre à jour
         DECLARE
-            v_count_comp NUMBER;
+            v_itemtype VARCHAR2(100);
         BEGIN
-            SELECT COUNT(*) INTO v_count_comp
-            FROM glpi_computers WHERE id = p_equip_ids(i);
+            SELECT itemtype INTO v_itemtype
+            FROM glpi_equipments WHERE id = p_equip_ids(i);
 
-            IF v_count_comp > 0 THEN
-                UPDATE glpi_computers
-                SET users_id_tech = v_tech_ids(v_idx_tech)
+            IF v_itemtype = 'Computer' THEN
+                UPDATE glpi_computers SET users_id_tech = v_tech_ids(v_idx_tech)
                 WHERE id = p_equip_ids(i);
             ELSE
-                UPDATE glpi_printers
-                SET users_id_tech = v_tech_ids(v_idx_tech)
+                UPDATE glpi_printers SET users_id_tech = v_tech_ids(v_idx_tech)
                 WHERE id = p_equip_ids(i);
             END IF;
         END;
