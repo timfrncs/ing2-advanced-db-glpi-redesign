@@ -53,16 +53,6 @@ BEGIN
         0   -- droits sur ce site uniquement
     );
 
-    -- À ajouter dans ajouter_admin
-    INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id)
-    VALUES (
-        v_user_id,
-        (SELECT id FROM glpi_profiles WHERE UPPER(name) = 'ADMINISTRATEUR'),
-        v_entities_id,
-        0
-    );
-
-
     -- Répartir les équipements
     v_equip_ids := repartition_charge_nouveau_tech(v_entities_id);
 
