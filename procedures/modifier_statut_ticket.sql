@@ -77,7 +77,11 @@ BEGIN
         WHERE UPPER(u.pseudo) = v_pseudo;
 
         SELECT COUNT(*) INTO v_tech_equip
-        FROM glpi_computers
+        FROM (
+            SELECT id, users_id_tech FROM glpi_computers
+            UNION ALL
+            SELECT id, users_id_tech FROM glpi_printers
+        )
         WHERE id = v_ticket_equip
         AND users_id_tech = v_tech_id;
 
