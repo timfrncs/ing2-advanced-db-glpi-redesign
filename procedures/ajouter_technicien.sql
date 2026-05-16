@@ -57,10 +57,21 @@ BEGIN
     v_equip_ids := repartition_charge_nouveau_tech(v_entities_id);
 
     -- Attribuer les équipements au nouveau technicien
-    FORALL i IN 1..v_equip_ids.COUNT
-        UPDATE glpi_computers
-        SET users_id_tech = v_user_id
-        WHERE id = v_equip_ids(i);
+    FOR i IN 1..v_equip_ids.COUNT LOOP
+        DECLARE v_itemtype VARCHAR2(100);
+        BEGIN
+            SELECT itemtype INTO v_itemtype
+            FROM glpi_equipments WHERE id = v_equip_ids(i);
+
+            IF v_itemtype = 'Computer' THEN
+                UPDATE glpi_computers SET users_id_tech = v_user_id
+                WHERE id = v_equip_ids(i);
+            ELSE
+                UPDATE glpi_printers SET users_id_tech = v_user_id
+                WHERE id = v_equip_ids(i);
+            END IF;
+        END;
+    END LOOP;
 
     COMMIT;
     DBMS_OUTPUT.PUT_LINE('Technicien créé : ' || v_pseudo || '_' || v_site ||
