@@ -126,7 +126,7 @@ BEGIN
         
         -- On n'affiche les tickets QUE s'il y en a (plus propre visuellement)
         IF r_equip.tickets_non_resolus > 0 THEN
-            DBMS_OUTPUT.PUT_LINE('    -> ⚠️ TICKETS EN COURS : ' || r_equip.tickets_non_resolus);
+            DBMS_OUTPUT.PUT_LINE('    -> TICKETS EN COURS : ' || r_equip.tickets_non_resolus);
         ELSE
             DBMS_OUTPUT.PUT_LINE('    -> RAS (Aucun ticket en cours)');
         END IF;
