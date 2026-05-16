@@ -58,6 +58,8 @@ BEGIN
 
     -- Désactiver
     UPDATE glpi_users SET is_active = 0 WHERE id = v_user_id;
+    DELETE FROM glpi_profiles_users
+    WHERE users_id = v_user_id;
 
     COMMIT;
     DBMS_OUTPUT.PUT_LINE('Admin ' || p_pseudo || ' désactivé sur ' || v_site);

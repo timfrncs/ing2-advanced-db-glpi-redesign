@@ -51,6 +51,15 @@ BEGIN
     INSERT INTO glpi_users (pseudo, firstname, realname, entities_id, is_active)
     VALUES (v_pseudo, p_firstname, p_realname, v_entities_id, 1);
 
+    -- Insérer dans glpi_profiles_users
+    INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id)
+    VALUES (
+        v_user_id,
+        (SELECT id FROM glpi_profiles WHERE UPPER(name) = 'ADMINISTRATEUR'),
+        v_entities_id,
+        0
+    );
+
     COMMIT;
     DBMS_OUTPUT.PUT_LINE('Admin créé : ' || v_pseudo || '_' || v_site);
 END;

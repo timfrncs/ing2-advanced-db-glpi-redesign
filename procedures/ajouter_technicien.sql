@@ -44,6 +44,25 @@ BEGIN
     VALUES (v_pseudo, p_firstname, p_realname, v_entities_id, 1)
     RETURNING id INTO v_user_id;
 
+    -- Insérer dans glpi_profiles_users
+    INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id, is_recursive)
+    VALUES (
+        v_user_id,
+        (SELECT id FROM glpi_profiles WHERE UPPER(name) = 'TECHNICIEN'),
+        v_entities_id,
+        0   -- droits sur ce site uniquement
+    );
+
+    -- À ajouter dans ajouter_admin
+    INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id)
+    VALUES (
+        v_user_id,
+        (SELECT id FROM glpi_profiles WHERE UPPER(name) = 'ADMINISTRATEUR'),
+        v_entities_id,
+        0
+    );
+
+
     -- Répartir les équipements
     v_equip_ids := repartition_charge_nouveau_tech(v_entities_id);
 
