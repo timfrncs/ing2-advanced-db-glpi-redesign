@@ -33,7 +33,6 @@ BEGIN
     AND ROWNUM = 1;
 
     -- Générer l'IP selon le site
-    v_host_seq := seq_ip_host.NEXTVAL;
 
     IF v_site = 'CERGY' THEN
     v_ip_address := '10.1.0.' || seq_ip_host_cergy.NEXTVAL;
