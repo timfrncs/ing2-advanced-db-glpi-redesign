@@ -1,4 +1,4 @@
-DECLARE 
+
     -- 1. Déclaration du curseur (La requête SQL)
    CREATE OR REPLACE PROCEDURE rapport_utilisateurs_site (p_id_site IN NUMBER) IS 
     
