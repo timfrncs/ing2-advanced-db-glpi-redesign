@@ -1,4 +1,4 @@
--- ARCHITECTURE BDDR - CAMPUS PAU
+-- ARCHITECTURE BDDR - CAMPUS PAU si la ligne using ne marche pas taper SHOW PARAMETER service_names; et prendre la valeur affiché au lieu du free
 CREATE PUBLIC DATABASE LINK dblink_vers_cergy
 CONNECT TO GLPI_TECH_CERGY IDENTIFIED BY "Cergy2026"
 USING 'localhost:1521/FREE';
