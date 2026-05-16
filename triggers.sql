@@ -54,25 +54,17 @@ END pkg_audit;
 
 -- C. Triggers d'integrite -----------------------------------------------------
 
--- Calcule lvl = lvl(parent) + 1 a chaque insert/update.
-CREATE OR REPLACE TRIGGER tr_loc_calc_lvl
-BEFORE INSERT OR UPDATE OF locations_id ON glpi_locations
+-- Interdit changer de campus pour une ligne de lieu : deplacer un lieu = INSERT
+-- nouveau cote destinataire + migration des enfants ou autre stratégie fonctionnelle.
+CREATE OR REPLACE TRIGGER tr_loc_no_chg_entity
+BEFORE UPDATE OF entities_id ON glpi_locations
 FOR EACH ROW
-DECLARE
-  v_parent_lvl NUMBER;
 BEGIN
-  IF :NEW.locations_id IS NULL THEN
-    :NEW.lvl := 0;
-  ELSE
-    SELECT lvl INTO v_parent_lvl
-      FROM glpi_locations
-     WHERE id = :NEW.locations_id;
-    :NEW.lvl := v_parent_lvl + 1;
+  IF :OLD.entities_id <> :NEW.entities_id THEN
+    RAISE_APPLICATION_ERROR(-20005,
+      'Changement interdit pour glpi_locations.entities_id (ancien=' || :OLD.entities_id ||
+      ', nouveau=' || :NEW.entities_id || '). Migrer avec un script dedie.');
   END IF;
-EXCEPTION
-  WHEN NO_DATA_FOUND THEN
-    RAISE_APPLICATION_ERROR(-20001,
-      'Location parente inexistante (locations_id=' || :NEW.locations_id || ')');
 END;
 /
 
@@ -92,6 +84,60 @@ BEGIN
       RAISE_APPLICATION_ERROR(-20002,
         'Ticket entities_id=' || :NEW.entities_id ||
         ' incoherent avec equipment entities_id=' || v_equip_ent);
+    END IF;
+  END IF;
+END;
+/
+
+-- Si un ticket refere un lieu physique, ce lieu doit appartenir au meme campus que le ticket.
+CREATE OR REPLACE TRIGGER tr_ticket_loc_entity
+BEFORE INSERT OR UPDATE OF locations_id, entities_id ON glpi_tickets
+FOR EACH ROW
+DECLARE
+  v_loc_ent NUMBER;
+BEGIN
+  IF :NEW.locations_id IS NOT NULL THEN
+    BEGIN
+      SELECT entities_id INTO v_loc_ent
+        FROM glpi_locations
+       WHERE id = :NEW.locations_id;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20006,
+          'Lieu inexistant pour le ticket : locations_id=' || :NEW.locations_id);
+    END;
+    IF v_loc_ent <> :NEW.entities_id THEN
+      RAISE_APPLICATION_ERROR(-20008,
+        'Ticket entities_id=' || :NEW.entities_id ||
+        ' incoherent avec glpi_locations.entities_id=' || v_loc_ent ||
+        ' (locations_id=' || :NEW.locations_id || ')');
+    END IF;
+  END IF;
+END;
+/
+
+-- Un equipement ne peut pas etre rattache (FK) a un lieu d'un autre campus que le sien.
+CREATE OR REPLACE TRIGGER tr_equip_loc_entity
+BEFORE INSERT OR UPDATE OF locations_id, entities_id ON glpi_equipments
+FOR EACH ROW
+DECLARE
+  v_loc_ent NUMBER;
+BEGIN
+  IF :NEW.locations_id IS NOT NULL THEN
+    BEGIN
+      SELECT entities_id INTO v_loc_ent
+        FROM glpi_locations
+       WHERE id = :NEW.locations_id;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20009,
+          'Lieu inexistant pour l equipement : locations_id=' || :NEW.locations_id);
+    END;
+    IF v_loc_ent <> :NEW.entities_id THEN
+      RAISE_APPLICATION_ERROR(-20010,
+        'Equipement entities_id=' || :NEW.entities_id ||
+        ' incoherent avec glpi_locations.entities_id=' || v_loc_ent ||
+        ' (locations_id=' || :NEW.locations_id || ')');
     END IF;
   END IF;
 END;
@@ -152,6 +198,43 @@ BEGIN
 END;
 /
 
+-- Audit des arborescences lieux par campus.
+CREATE OR REPLACE TRIGGER tr_hist_locations
+AFTER INSERT OR UPDATE OR DELETE ON glpi_locations
+FOR EACH ROW
+DECLARE
+  v_old CLOB;
+  v_new CLOB;
+  v_id  NUMBER;
+  v_act VARCHAR2(10);
+BEGIN
+  IF INSERTING THEN
+    v_act := 'INSERT'; v_id := :NEW.id;
+  ELSIF UPDATING THEN
+    v_act := 'UPDATE'; v_id := :NEW.id;
+  ELSE
+    v_act := 'DELETE'; v_id := :OLD.id;
+  END IF;
+
+  IF NOT INSERTING THEN
+    v_old := 'id=' || :OLD.id ||
+             ';name=' || :OLD.name ||
+             ';ent=' || :OLD.entities_id ||
+             ';par=' || NVL(TO_CHAR(:OLD.locations_id), 'NULL') ||
+             ';lvl=' || :OLD.lvl;
+  END IF;
+  IF NOT DELETING THEN
+    v_new := 'id=' || :NEW.id ||
+             ';name=' || :NEW.name ||
+             ';ent=' || :NEW.entities_id ||
+             ';par=' || NVL(TO_CHAR(:NEW.locations_id), 'NULL') ||
+             ';lvl=' || :NEW.lvl;
+  END IF;
+
+  pkg_audit.log_change('glpi_locations', v_id, v_act, v_old, v_new);
+END;
+/
+
 -- Audit du cycle de vie des tickets.
 CREATE OR REPLACE TRIGGER tr_hist_tickets
 AFTER INSERT OR UPDATE OR DELETE ON glpi_tickets
@@ -175,16 +258,18 @@ BEGIN
              ';name='   || :OLD.name ||
              ';status=' || :OLD.status ||
              ';ent='    || :OLD.entities_id ||
-             ';equip='  || :OLD.equipment_id ||
-             ';user='   || :OLD.users_id;
+             ';loc='    || NVL(TO_CHAR(:OLD.locations_id), 'NULL') ||
+             ';equip='  || NVL(TO_CHAR(:OLD.equipment_id), 'NULL') ||
+             ';user='   || NVL(TO_CHAR(:OLD.users_id), 'NULL');
   END IF;
   IF NOT DELETING THEN
     v_new := 'id='      || :NEW.id ||
              ';name='   || :NEW.name ||
              ';status=' || :NEW.status ||
              ';ent='    || :NEW.entities_id ||
-             ';equip='  || :NEW.equipment_id ||
-             ';user='   || :NEW.users_id;
+             ';loc='    || NVL(TO_CHAR(:NEW.locations_id), 'NULL') ||
+             ';equip='  || NVL(TO_CHAR(:NEW.equipment_id), 'NULL') ||
+             ';user='   || NVL(TO_CHAR(:NEW.users_id), 'NULL');
   END IF;
 
   pkg_audit.log_change('glpi_tickets', v_id, v_act, v_old, v_new);
