@@ -171,3 +171,130 @@ ALTER TABLE glpi_profilerights ADD CONSTRAINT fk_profrights_profile FOREIGN KEY 
 
 ALTER TABLE glpi_computers ADD CONSTRAINT chk_comp_states CHECK (states_id IN (1, 2, 3, 4));
 ALTER TABLE glpi_printers ADD CONSTRAINT chk_print_states CHECK (states_id IN (1, 2, 3, 4));
+
+
+
+
+-- =============================================================================
+-- GLPI CY Tech - Donnees initiales (VERSION VIERGE / SANS PROCEDURES)
+-- =============================================================================
+
+-- =============================================================================
+-- 1. PROFILS GLPI
+-- =============================================================================
+INSERT INTO glpi_profiles (name, interface) VALUES ('Administrateur', 'central');
+INSERT INTO glpi_profiles (name, interface) VALUES ('Technicien',     'central');
+INSERT INTO glpi_profiles (name, interface) VALUES ('Lecture seule',  'helpdesk');
+
+-- =============================================================================
+-- 2. DROITS PAR PROFIL (glpi_profilerights)
+-- =============================================================================
+
+-- ---- Profil Administrateur (id=1) -------------------------------------------
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'v_admin_tickets_en_retard',    1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'v_admin_equipements_inactifs', 1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'v_admin_charge_techniciens',   1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'mv_charge_techniciens',        1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'mv_read_parc_par_site',        1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'ajouter_utilisateur_lambda',       1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'ajouter_technicien',               1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'ajouter_admin',                    1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'supprimer_utilisateur_lambda',     1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'supprimer_technicien',             1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'supprimer_admin',                  1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'ajouter_lambda_autre_site',        1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'ajouter_tech_ou_admin_autre_site', 1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'ajouter_equipement',               1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'changer_statut_equipement',        1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'affecter_localisation_equipement', 1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'affecter_technicien_equipement',   1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'modifier_statut_ticket',           1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'v_global_equipements',       1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'v_global_users',             1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'v_global_tickets',           1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'creer_ticket',               0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'v_tech_tickets_actifs',      0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (1, 'v_read_tickets_non_resolus', 0);
+
+-- ---- Profil Technicien (id=2) -----------------------------------------------
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'v_tech_tickets_actifs', 1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'ajouter_equipement',               1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'changer_statut_equipement',        1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'affecter_localisation_equipement', 1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'modifier_statut_ticket',           1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'ajouter_utilisateur_lambda',       0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'ajouter_technicien',               0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'ajouter_admin',                    0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'supprimer_utilisateur_lambda',     0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'supprimer_technicien',             0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'supprimer_admin',                  0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'ajouter_lambda_autre_site',        0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'ajouter_tech_ou_admin_autre_site', 0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'affecter_technicien_equipement',   0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'creer_ticket',                     0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'v_admin_tickets_en_retard',        0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'v_admin_equipements_inactifs',     0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'v_admin_charge_techniciens',       0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'mv_charge_techniciens',            0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'v_read_tickets_non_resolus',       0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'mv_read_parc_par_site',            0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'v_global_equipements',             0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'v_global_users',                   0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (2, 'v_global_tickets',                 0);
+
+-- ---- Profil Lecture seule (id=3) --------------------------------------------
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'v_read_tickets_non_resolus', 1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'mv_read_parc_par_site',      1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'v_global_equipements',       1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'v_global_users',             1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'v_global_tickets',           1);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'v_tech_tickets_actifs',            0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'v_admin_tickets_en_retard',        0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'v_admin_equipements_inactifs',     0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'v_admin_charge_techniciens',       0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'mv_charge_techniciens',            0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'ajouter_utilisateur_lambda',       0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'ajouter_technicien',               0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'ajouter_admin',                    0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'supprimer_utilisateur_lambda',     0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'supprimer_technicien',             0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'supprimer_admin',                  0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'ajouter_lambda_autre_site',        0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'ajouter_tech_ou_admin_autre_site', 0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'ajouter_equipement',               0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'changer_statut_equipement',        0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'affecter_localisation_equipement', 0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'affecter_technicien_equipement',   0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'modifier_statut_ticket',           0);
+INSERT INTO glpi_profilerights (profiles_id, name, rights) VALUES (3, 'creer_ticket',                     0);
+
+-- =============================================================================
+-- 3. RESEAUX PAR SITE
+-- =============================================================================
+INSERT INTO glpi_networks (name, entities_id) VALUES ('10.1.0.0/24', 1);
+INSERT INTO glpi_networks (name, entities_id) VALUES ('10.2.0.0/24', 2);
+
+-- =============================================================================
+-- 4. LOCALISATIONS DE BASE
+-- =============================================================================
+-- Cergy (entities_id = 1)
+INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-1');   -- Salle Informatique A101
+INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-2');   -- Salle Informatique A102
+INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-3');   -- Salle Informatique B201
+INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-4');   -- Bureau Technicien IT
+INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-5');   -- Salle de Cours C301
+INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-6');   -- Amphitheatre D001
+INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-7');   -- Bibliotheque E101
+INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-8');   -- Salle Serveurs
+
+-- Pau (entities_id = 2)
+INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-9');   -- Salle Informatique P101
+INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-10');  -- Salle Informatique P102
+INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-11');  -- Salle Informatique P201
+INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-12');  -- Bureau Technicien IT
+INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-13');  -- Salle de Cours P301
+INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-14');  -- Amphitheatre P001
+INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-15');  -- Bibliotheque P101
+INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'LOC-16');  -- Salle Serveurs
+
+COMMIT;
