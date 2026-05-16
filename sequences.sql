@@ -30,6 +30,7 @@ CREATE SEQUENCE seq_equip_pau
     INCREMENT BY 1 
     NOCACHE;
 
+
 -- 3. NUMÉROS DE SÉRIE (Global)
 -- à voir si on genère plus tot des grands nombres avec des lettres ou pas...
 DROP SEQUENCE seq_hardware_serial;
