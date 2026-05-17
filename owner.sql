@@ -14,8 +14,6 @@
 --   Les comptes individuels (admins, techniciens) sont crees dynamiquement
 --   par les procedures ajouter_admin et ajouter_technicien.
 -- =============================================================================
--- SECURITE : changer les mots de passe avant toute mise en production.
--- =============================================================================
 
 
 -- =============================================================================
