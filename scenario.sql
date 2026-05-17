@@ -91,6 +91,19 @@ BEGIN
 END;
 /
 
+-- Bilan repartition : rafraichir la MV puis interroger la vue admin filtree par site
+PROMPT [2b] v_admin_charge_techniciens : repartition apres creation de FMARTIN
+EXEC DBMS_MVIEW.REFRESH('mv_charge_techniciens', 'C');
+
+BEGIN
+    DBMS_SESSION.SET_IDENTIFIER('ADUPONT|CERGY');
+END;
+/
+
+SELECT technicien, nb_computers, nb_printers, total_equipements
+FROM   v_admin_charge_techniciens
+ORDER BY total_equipements DESC;
+
 -- [3] Utilisateur lambda de test
 PROMPT [3] ajouter_utilisateur_lambda : Test Demo (TDEMO)
 BEGIN

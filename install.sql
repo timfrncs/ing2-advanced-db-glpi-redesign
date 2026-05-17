@@ -138,9 +138,6 @@ PROMPT   > v_admin_tickets_en_retard
 PROMPT   > v_admin_equipements_inactifs
 @H:/Documents/COURS/ing2/S2/TAD/Projet/ing2-advanced-db-glpi-redesign/vues_logiques/v_admin_equipements_inactifs.sql
 
-PROMPT   > v_admin_charge_techniciens
-@H:/Documents/COURS/ing2/S2/TAD/Projet/ing2-advanced-db-glpi-redesign/vues_logiques/v_admin_charge_techniciens.sql
-
 PROMPT   > v_read_tickets_non_resolus
 @H:/Documents/COURS/ing2/S2/TAD/Projet/ing2-advanced-db-glpi-redesign/vues_logiques/v_read_tickets_non_resolus.sql
 
@@ -149,6 +146,9 @@ PROMPT   > mv_charge_techniciens
 
 PROMPT   > mv_read_parc_par_site
 @H:/Documents/COURS/ing2/S2/TAD/Projet/ing2-advanced-db-glpi-redesign/vues_materialisees/mv_read_parc_par_site.sql
+
+PROMPT   > v_admin_charge_techniciens
+@H:/Documents/COURS/ing2/S2/TAD/Projet/ing2-advanced-db-glpi-redesign/vues_logiques/v_admin_charge_techniciens.sql
 
 
 -- =============================================================================
