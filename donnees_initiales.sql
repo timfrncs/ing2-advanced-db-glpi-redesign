@@ -236,15 +236,16 @@ END;
 
 
 -- =============================================================================
--- 5.3 TECHNICIENS CERGY
--- Comptes Oracle crees : ADUPONT_CERGY (Alice Dupont), BMARTIN_CERGY (Bob Martin)
+-- 5.3 ADMIN CERGY + TECHNICIEN CERGY
+-- ADUPONT_CERGY (Alice Dupont) : administrateur Cergy, conducteur de l ACTE 1
+-- BMARTIN_CERGY (Bob Martin)   : technicien Cergy, seul responsable du parc initial
 -- repartition_charge_nouveau_tech retourne vide : les equipements ci-dessus
 -- ont tous users_id_tech=NULL, aucun tech precedent ne depasse le quota.
 -- L affectation manuelle est faite en 5.5 via affecter_technicien_equipement.
 -- =============================================================================
 BEGIN
     DBMS_SESSION.SET_IDENTIFIER('INIT|CERGY');
-    ajouter_technicien('Alice', 'Dupont', 'Tech#Alice1!');
+    ajouter_admin     ('Alice', 'Dupont', 'Admin#Alice1!');
     ajouter_technicien('Bob',   'Martin', 'Tech#Bob1!');
 END;
 /
@@ -264,13 +265,11 @@ END;
 
 -- =============================================================================
 -- 5.5 AFFECTATION DES EQUIPEMENTS AUX TECHNICIENS (round-robin)
--- Cergy : ADUPONT <- rangs impairs (38 equip) / BMARTIN <- rangs pairs (37)
+-- Cergy : BMARTIN <- 75 equip (seul tech initial ; ADUPONT est admin)
 -- Pau   : CBERNARD <- rangs impairs (38 equip) / DPETIT  <- rangs pairs (37)
 -- affecter_technicien_equipement commit a chaque appel ; le CLIENT_IDENTIFIER
 -- de session persiste entre les commits.
 -- =============================================================================
-DECLARE
-    v_rn NUMBER := 0;
 BEGIN
     DBMS_SESSION.SET_IDENTIFIER('INIT|CERGY');
     FOR eq IN (
@@ -279,12 +278,7 @@ BEGIN
         WHERE  e.entities_id = 1
         ORDER BY e.id
     ) LOOP
-        v_rn := v_rn + 1;
-        IF MOD(v_rn, 2) = 1 THEN
-            affecter_technicien_equipement(eq.name, 'ADUPONT');
-        ELSE
-            affecter_technicien_equipement(eq.name, 'BMARTIN');
-        END IF;
+        affecter_technicien_equipement(eq.name, 'BMARTIN');
     END LOOP;
 END;
 /

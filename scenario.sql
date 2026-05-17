@@ -12,7 +12,7 @@
 -- Les procedures l utilisent pour identifier le site et l utilisateur courant.
 --
 -- Personnages :
---   ADUPONT   (technicien Cergy, existant - simule un admin via CLIENT_IDENTIFIER)
+--   ADUPONT   (admin Cergy, existant)
 --   EPERON    (admin Cergy, cree ici -> nettoye en fin de scenario)
 --   JLEFEVRE  (admin Cergy, cree ici -> reste : Last Man Standing)
 --   FMARTIN   (tech  Cergy, cree ici -> nettoye en fin de scenario)
