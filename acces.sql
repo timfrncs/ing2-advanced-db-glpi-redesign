@@ -1,8 +1,6 @@
 -- =============================================================================
 -- GLPI CY Tech - Droits applicatifs
--- Fichier    : 07_grants.sql
 -- Connexion  : GLPI_OWNER
--- Dependances: 05_procedures_fonctions.sql + 06_vues.sql executes avant
 -- Contenu    : GRANTs sur vues / MV / procedures + synonymes publics
 -- =============================================================================
 -- Principe du moindre privilege :
