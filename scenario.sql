@@ -39,7 +39,7 @@ COLUMN sujet                  FORMAT A38
 COLUMN equipement             FORMAT A12
 COLUMN equipement_concerne    FORMAT A12
 COLUMN adresse_ip             FORMAT A15
-COLUMN statut_ticket          FORMAT A12
+COLUMN statut_ticket          FORMAT A13
 COLUMN demandeur              FORMAT A14
 COLUMN jours_ouverts          FORMAT 999
 COLUMN technicien             FORMAT A22
@@ -452,7 +452,7 @@ BEGIN
 END;
 /
 
-PROMPT [Vue] v_tech_tickets_actifs de CBERNARD (inclut le ticket Pau en cours)
+PROMPT [Vue] v_tech_tickets_actifs de CBERNARD (5 tickets initiaux Nouveau + TKT-2000011 En cours)
 BEGIN
     DBMS_SESSION.SET_IDENTIFIER('CBERNARD|PAU');
 END;
@@ -491,77 +491,6 @@ FROM   mv_read_parc_par_site
 ORDER BY site;
 
 
--- =============================================================================
--- EXPLAIN PLAN : ANALYSE DES ACCES ET PERFORMANCES
--- Effectue AVANT le nettoyage (FMARTIN et les donnees de demo encore presentes)
--- =============================================================================
-PROMPT
-PROMPT ================================================================
-PROMPT  EXPLAIN PLAN - PERFORMANCE ET PARTITIONNEMENT
-PROMPT ================================================================
-
--- Mise a jour des statistiques pour des plans representatifs
-BEGIN
-    DBMS_STATS.GATHER_TABLE_STATS(OWNNAME => 'GLPI_OWNER', TABNAME => 'GLPI_TICKETS',    CASCADE => TRUE);
-    DBMS_STATS.GATHER_TABLE_STATS(OWNNAME => 'GLPI_OWNER', TABNAME => 'GLPI_EQUIPMENTS', CASCADE => TRUE);
-    DBMS_OUTPUT.PUT_LINE('Statistiques mises a jour.');
-END;
-/
-
--- ---- EP1 : Requete AVEC filtre entities_id (partition pruning) ---------------
-PROMPT [EP1] Partition pruning : tickets Cergy uniquement (entities_id = 1)
-EXPLAIN PLAN SET STATEMENT_ID = 'EP1_PRUNING' FOR
-SELECT t.id, t.name, t.status
-FROM   glpi_tickets t
-WHERE  t.entities_id = 1
-AND    t.status IN (1, 2, 3);
-SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, 'EP1_PRUNING', 'TYPICAL'));
-
--- ---- EP2 : Requete SANS filtre site (scan des deux partitions) ---------------
-PROMPT [EP2] Full-partition scan : tickets tous sites (pas de filtre entities_id)
-EXPLAIN PLAN SET STATEMENT_ID = 'EP2_FULLSCAN' FOR
-SELECT t.id, t.name, t.status
-FROM   glpi_tickets t
-WHERE  t.status IN (1, 2, 3);
-SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, 'EP2_FULLSCAN', 'TYPICAL'));
-
--- ---- EP3 : Vue v_tech_tickets_actifs (CLIENT_IDENTIFIER + multi-join) --------
-PROMPT [EP3] Vue v_tech_tickets_actifs : plan complet (BMARTIN|CERGY)
-PROMPT       -> observe partition pruning + index idx_tick_equip_id
-BEGIN
-    DBMS_SESSION.SET_IDENTIFIER('BMARTIN|CERGY');
-END;
-/
-EXPLAIN PLAN SET STATEMENT_ID = 'EP3_TECH_VIEW' FOR
-SELECT ticket_id, sujet_ticket, equipement, adresse_ip, statut_ticket
-FROM   v_tech_tickets_actifs;
-SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, 'EP3_TECH_VIEW', 'TYPICAL'));
-
--- ---- EP4 : Acces direct a la MV (lecture d un segment preagregee) -----------
-PROMPT [EP4] MV mv_read_parc_par_site : acces direct a l agregat precompute
-EXPLAIN PLAN SET STATEMENT_ID = 'EP4_MV_DIRECT' FOR
-SELECT * FROM mv_read_parc_par_site;
-SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, 'EP4_MV_DIRECT', 'TYPICAL'));
-
--- ---- EP5 : Requete directe equivalente (sans MV) ----------------------------
-PROMPT [EP5] Requete directe equivalente (sans MV) : comparer le cout avec EP4
-EXPLAIN PLAN SET STATEMENT_ID = 'EP5_EQUIV_DIRECT' FOR
-SELECT e.name AS site,
-       SUM(CASE WHEN eq.itemtype = 'Computer' THEN 1 ELSE 0 END) AS nb_computers,
-       SUM(CASE WHEN eq.itemtype = 'Printer'  THEN 1 ELSE 0 END) AS nb_printers,
-       COUNT(*) AS total_equipements
-FROM   glpi_equipments eq
-JOIN   glpi_entities e ON e.id = eq.entities_id
-GROUP BY e.name;
-SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, 'EP5_EQUIV_DIRECT', 'TYPICAL'));
-
--- ---- EP6 : Index sur equipment_id (lookup des tickets d un equipement) ------
-PROMPT [EP6] Index idx_tick_equip_id : tickets d un seul equipement (id=1)
-EXPLAIN PLAN SET STATEMENT_ID = 'EP6_IDX_EQUIP' FOR
-SELECT t.id, t.name, t.status, t.date_issue
-FROM   glpi_tickets t
-WHERE  t.equipment_id = 1;
-SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, 'EP6_IDX_EQUIP', 'TYPICAL'));
 
 
 -- =============================================================================
@@ -632,19 +561,31 @@ SELECT 'Tickets En cours',                      COUNT(*) FROM glpi_tickets WHERE
 UNION ALL
 SELECT 'Tickets Resolu',                        COUNT(*) FROM glpi_tickets WHERE status = 4
 UNION ALL
-SELECT 'Techniciens actifs Cergy', COUNT(*)
-FROM   glpi_users u
-JOIN   glpi_profiles_users pu ON pu.users_id = u.id
-JOIN   glpi_profiles p ON p.id = pu.profiles_id
-WHERE  UPPER(p.name) = 'TECHNICIEN' AND u.entities_id = 1 AND u.is_active = 1
-UNION ALL
 SELECT 'Admins actifs Cergy', COUNT(*)
 FROM   glpi_users u
 JOIN   glpi_profiles_users pu ON pu.users_id = u.id
 JOIN   glpi_profiles p ON p.id = pu.profiles_id
 WHERE  UPPER(p.name) = 'ADMINISTRATEUR' AND u.entities_id = 1 AND u.is_active = 1
 UNION ALL
-SELECT 'Evenements audit (history)', COUNT(*) FROM glpi_history
+SELECT 'Admins actifs Pau', COUNT(*)
+FROM   glpi_users u
+JOIN   glpi_profiles_users pu ON pu.users_id = u.id
+JOIN   glpi_profiles p ON p.id = pu.profiles_id
+WHERE  UPPER(p.name) = 'ADMINISTRATEUR' AND u.entities_id = 2 AND u.is_active = 1
+UNION ALL
+SELECT 'Techniciens actifs Cergy', COUNT(*)
+FROM   glpi_users u
+JOIN   glpi_profiles_users pu ON pu.users_id = u.id
+JOIN   glpi_profiles p ON p.id = pu.profiles_id
+WHERE  UPPER(p.name) = 'TECHNICIEN' AND u.entities_id = 1 AND u.is_active = 1
+UNION ALL
+SELECT 'Techniciens actifs Pau', COUNT(*)
+FROM   glpi_users u
+JOIN   glpi_profiles_users pu ON pu.users_id = u.id
+JOIN   glpi_profiles p ON p.id = pu.profiles_id
+WHERE  UPPER(p.name) = 'TECHNICIEN' AND u.entities_id = 2 AND u.is_active = 1
+UNION ALL
+SELECT 'Utilisateurs actifs', COUNT(*) FROM glpi_users WHERE is_active = 1
 ORDER BY 1;
 
 PROMPT
@@ -673,8 +614,7 @@ PROMPT   mv_charge_techniciens        ACTE 4 (+ refresh manuel)
 PROMPT   v_read_tickets_non_resolus   ACTE 7
 PROMPT   mv_read_parc_par_site        ACTE 7 (+ refresh manuel)
 PROMPT
-PROMPT  EXPLAIN PLAN : EP1 pruning site | EP2 full scan | EP3 vue tech
-PROMPT                 EP4 MV direct   | EP5 equiv direct | EP6 index equip
+PROMPT  EXPLAIN PLAN : voir explain_plan.sql (16 plans, un par procedure/vue)
 PROMPT ================================================================
 PROMPT  Lancer cleanup.sql (en tant que SYS SYSDBA) pour remettre a zero.
 PROMPT ================================================================
