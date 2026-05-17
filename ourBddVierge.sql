@@ -301,5 +301,379 @@ COMMIT;
 
 
 
+SET SERVEROUTPUT ON;
 
+DECLARE
+    v_eq_id NUMBER;
+    v_net_cergy NUMBER;
+    v_net_pau NUMBER;
+    v_ip_id NUMBER;
+    v_loc_id NUMBER;
+    v_tech_id NUMBER;
+    v_user_id NUMBER;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('⏳ Démarrage de l''usine à données PL/SQL... VEUILLEZ PATIENTER');
+
+    -- =========================================================================
+    -- 0. INJECTION DES DONNÉES CIBLES (Pour que test_perf.sql fonctionne)
+    -- =========================================================================
+    -- Salles cibles
+    INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'LOC-1');
+    
+    -- Utilisateurs cibles
+    INSERT INTO glpi_users (pseudo, realname, firstname, entities_id) VALUES ('TECH_01', 'Cible', 'Tech', 1) RETURNING id INTO v_tech_id;
+    INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id) VALUES (v_tech_id, 2, 1);
+    
+    -- Équipements cibles
+    INSERT INTO glpi_equipments (name, itemtype, entities_id) VALUES ('EQ-10001', 'Computer', 1) RETURNING id INTO v_eq_id;
+    INSERT INTO glpi_computers (id, serial, states_id, users_id_tech) VALUES (v_eq_id, 'SN-CIBLE-1', 1, v_tech_id);
+    
+    INSERT INTO glpi_equipments (name, itemtype, entities_id) VALUES ('EQ-123', 'Computer', 1) RETURNING id INTO v_eq_id;
+    INSERT INTO glpi_computers (id, serial, states_id) VALUES (v_eq_id, 'SN-CIBLE-2', 1);
+
+    -- =========================================================================
+    -- 1. RÉSEAUX ET ADRESSES IP (Génération algorithmique)
+    -- =========================================================================
+    DBMS_OUTPUT.PUT_LINE('-> Génération des Réseaux et Adresses IP...');
+    -- On récupère les ID des réseaux (Créés dans donnees_initiales.sql)
+    SELECT id INTO v_net_cergy FROM glpi_networks WHERE entities_id = 1;
+    SELECT id INTO v_net_pau FROM glpi_networks WHERE entities_id = 2;
+
+    -- Génération de 2 500 IPs par site avec des boucles imbriquées (10.x.octet3.octet4)
+    FOR octet3 IN 1..10 LOOP
+        FOR octet4 IN 1..250 LOOP
+            INSERT INTO glpi_ipaddresses (name, networks_id) VALUES ('10.1.' || octet3 || '.' || octet4, v_net_cergy);
+            INSERT INTO glpi_ipaddresses (name, networks_id) VALUES ('10.2.' || octet3 || '.' || octet4, v_net_pau);
+        END LOOP;
+    END LOOP;
+
+    -- =========================================================================
+    -- 2. LOCALISATIONS (Salles)
+    -- =========================================================================
+    DBMS_OUTPUT.PUT_LINE('-> Génération des Salles de cours et Bureaux...');
+    FOR i IN 2..100 LOOP
+        INSERT INTO glpi_locations (entities_id, name) VALUES (1, 'SALLE-CERGY-' || i);
+        INSERT INTO glpi_locations (entities_id, name) VALUES (2, 'SALLE-PAU-' || i);
+    END LOOP;
+
+    -- =========================================================================
+    -- 3. UTILISATEURS (Lambdas, Techniciens)
+    -- =========================================================================
+    DBMS_OUTPUT.PUT_LINE('-> Génération des Utilisateurs et Techniciens...');
+    -- 50 Techniciens par site
+    FOR i IN 1..50 LOOP
+        INSERT INTO glpi_users (pseudo, realname, entities_id) VALUES ('T_C_' || i, 'Tech Cergy ' || i, 1) RETURNING id INTO v_tech_id;
+        INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id) VALUES (v_tech_id, 2, 1);
+        
+        INSERT INTO glpi_users (pseudo, realname, entities_id) VALUES ('T_P_' || i, 'Tech Pau ' || i, 2) RETURNING id INTO v_tech_id;
+        INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id) VALUES (v_tech_id, 2, 2);
+    END LOOP;
+
+    -- 10 000 Étudiants (Lambdas)
+    FOR i IN 1..5000 LOOP
+        INSERT INTO glpi_users (pseudo, realname, entities_id) VALUES ('ETUD_C_' || i, 'Eleve C ' || i, 1);
+        INSERT INTO glpi_users (pseudo, realname, entities_id) VALUES ('ETUD_P_' || i, 'Eleve P ' || i, 2);
+    END LOOP;
+
+    -- =========================================================================
+    -- 4. ÉQUIPEMENTS (Ordinateurs ET Imprimantes)
+    -- =========================================================================
+    DBMS_OUTPUT.PUT_LINE('-> Génération du Parc Matériel (PC et Imprimantes)...');
+    
+    -- On récupère l'ID du premier technicien généré pour lui assigner des machines
+    SELECT MAX(id) INTO v_tech_id FROM glpi_users WHERE entities_id = 1 AND pseudo LIKE 'T_C_%';
+
+    -- 16 000 Ordinateurs (8000 par site)
+    FOR i IN 1..8000 LOOP
+        INSERT INTO glpi_equipments (name, itemtype, entities_id) VALUES ('PC-C-' || i, 'Computer', 1) RETURNING id INTO v_eq_id;
+        INSERT INTO glpi_computers (id, serial, states_id, users_id_tech) VALUES (v_eq_id, 'SNC-' || i, 1, v_tech_id);
+        
+        INSERT INTO glpi_equipments (name, itemtype, entities_id) VALUES ('PC-P-' || i, 'Computer', 2) RETURNING id INTO v_eq_id;
+        INSERT INTO glpi_computers (id, serial, states_id) VALUES (v_eq_id, 'SNP-' || i, 1);
+    END LOOP;
+
+    -- 4 000 Imprimantes (2000 par site)
+    FOR i IN 1..2000 LOOP
+        INSERT INTO glpi_equipments (name, itemtype, entities_id) VALUES ('PR-C-' || i, 'Printer', 1) RETURNING id INTO v_eq_id;
+        INSERT INTO glpi_printers (id, serial, states_id, users_id_tech) VALUES (v_eq_id, 'PRC-' || i, 1, v_tech_id);
+        
+        INSERT INTO glpi_equipments (name, itemtype, entities_id) VALUES ('PR-P-' || i, 'Printer', 2) RETURNING id INTO v_eq_id;
+        INSERT INTO glpi_printers (id, serial, states_id) VALUES (v_eq_id, 'PRP-' || i, 1);
+    END LOOP;
+
+    -- =========================================================================
+    -- 5. TICKETS HELPDESK
+    -- =========================================================================
+    DBMS_OUTPUT.PUT_LINE('-> Génération des Tickets d''incidents...');
+    -- On associe les tickets au premier étudiant
+    SELECT MAX(id) INTO v_user_id FROM glpi_users WHERE entities_id = 1 AND pseudo LIKE 'ETUD_C_%';
+
+    FOR i IN 1..4000 LOOP
+        -- MOD(i, 5) + 1 permet de générer des statuts aléatoires entre 1 et 5
+        INSERT INTO glpi_tickets (name, content, status, entities_id, equipment_id, users_id)
+        VALUES ('Incident N°' || i, 'Description automatique', MOD(i, 5) + 1, 1, i, v_user_id);
+    END LOOP;
+
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('✅ TERMINÉ : Base massivement peuplée avec toutes les entités !');
+END;
+/
+
+-- ATTENTION FAUT CHANGER LE CHEMIN LIGNE 427 FIO
+
+SET LINESIZE 200;
+SET PAGESIZE 2000;
+SET TRIMSPOOL ON;
+SPOOL C:\Users\fiori\Documents\cours\Ing2\TAD\rapport_audit_local_uniquement.txt
+
+PROMPT =========================================================================
+PROMPT 1. affecter_localisation_equipement
+PROMPT =========================================================================
+
+PROMPT ETAPE 1.1 Recherche ID Salle
+EXPLAIN PLAN FOR 
+SELECT id FROM glpi_locations WHERE name = 'LOC-1' AND entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 1.2 Mise a jour equipement
+EXPLAIN PLAN FOR 
+UPDATE glpi_equipments SET locations_id = 999 WHERE name = 'EQ-10001' AND entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 2. affecter_technicien_equipement
+PROMPT =========================================================================
+
+PROMPT ETAPE 2.1 Recherche du technicien
+EXPLAIN PLAN FOR 
+SELECT id FROM glpi_users WHERE pseudo = 'TECH_01' AND entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 2.2 Recherche ID equipement
+EXPLAIN PLAN FOR 
+SELECT id FROM glpi_equipments WHERE name = 'EQ-10001' AND entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 2.3 Maj de la table fille
+EXPLAIN PLAN FOR 
+UPDATE glpi_computers SET users_id_tech = 888 WHERE id = 999;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 3. ajouter_admin
+PROMPT =========================================================================
+
+PROMPT ETAPE 3.1 Recherche du profil
+EXPLAIN PLAN FOR 
+SELECT id FROM glpi_profiles WHERE name = 'Administrateur';
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 3.2 Insertion utilisateur
+EXPLAIN PLAN FOR 
+INSERT INTO glpi_users (pseudo, realname, firstname, is_active, entities_id) VALUES ('ADM01', 'Nom', 'Prenom', 1, 1);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 3.3 Insertion lien profil
+EXPLAIN PLAN FOR 
+INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id) VALUES (999, 1, 1);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 4. ajouter_equipement
+PROMPT =========================================================================
+
+PROMPT ETAPE 4.1 Recherche du reseau
+EXPLAIN PLAN FOR 
+SELECT id FROM glpi_networks WHERE entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 4.2 Insertion table mere
+EXPLAIN PLAN FOR 
+INSERT INTO glpi_equipments (name, itemtype, entities_id, ipaddresses_id) VALUES ('EQ-10002', 'Computer', 1, 1);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 4.3 Insertion table fille
+EXPLAIN PLAN FOR 
+INSERT INTO glpi_computers (id, serial, states_id) VALUES (999, 'SN-10002', 1);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 5. ajouter_technicien (INCLUT REPARTITION)
+PROMPT =========================================================================
+
+PROMPT ETAPE 5.1 Recherche du profil
+EXPLAIN PLAN FOR 
+SELECT id FROM glpi_profiles WHERE name = 'Technicien';
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 5.2 Insertion utilisateur
+EXPLAIN PLAN FOR 
+INSERT INTO glpi_users (pseudo, realname, firstname, is_active, entities_id) VALUES ('TECH02', 'Nom', 'Prenom', 1, 1);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 5.3 Insertion lien profil
+EXPLAIN PLAN FOR 
+INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id) VALUES (999, 2, 1);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 5.4 Repartition NOT EXISTS
+EXPLAIN PLAN FOR
+SELECT eq.id FROM glpi_equipments eq JOIN glpi_computers c ON c.id = eq.id
+WHERE c.users_id_tech = 42 AND eq.entities_id = 1
+AND NOT EXISTS (SELECT 1 FROM glpi_tickets t WHERE t.equipment_id = eq.id AND t.status IN (2, 3));
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 6. ajouter_utilisateur_lambda
+PROMPT =========================================================================
+
+PROMPT ETAPE 6.1 Insertion Etudiant
+EXPLAIN PLAN FOR 
+INSERT INTO glpi_users (pseudo, realname, firstname, is_active, entities_id) VALUES ('ETUD01', 'Nom', 'Prenom', 1, 1);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 7. changer_statut_equipement
+PROMPT =========================================================================
+
+PROMPT ETAPE 7.1 Maj Statut
+EXPLAIN PLAN FOR 
+UPDATE glpi_computers SET states_id = 4 WHERE id = (SELECT id FROM glpi_equipments WHERE name = 'EQ-10001' AND entities_id = 1);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 8. creer_ticket
+PROMPT =========================================================================
+
+PROMPT ETAPE 8.1 Verification equipement
+EXPLAIN PLAN FOR
+SELECT e.id, c.states_id AS comp_state, p.states_id AS print_state
+FROM glpi_equipments e LEFT JOIN glpi_computers c ON e.id = c.id LEFT JOIN glpi_printers p ON e.id = p.id
+WHERE e.name = 'EQ-10001' AND e.entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 8.2 Insertion ticket
+EXPLAIN PLAN FOR 
+INSERT INTO glpi_tickets (name, content, status, entities_id, equipment_id, users_id) VALUES ('Panne', 'Erreur', 1, 1, 999, 888);
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 9. modifier_statut_ticket
+PROMPT =========================================================================
+
+PROMPT ETAPE 9.1 Maj Statut
+EXPLAIN PLAN FOR 
+UPDATE glpi_tickets SET status = 5 WHERE id = 123;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 10. supprimer_admin
+PROMPT =========================================================================
+
+PROMPT ETAPE 10.1 Desactivation
+EXPLAIN PLAN FOR 
+UPDATE glpi_users SET is_active = 0 WHERE pseudo = 'ADM01' AND entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 11. supprimer_technicien (INCLUT REDISTRIBUTION)
+PROMPT =========================================================================
+
+PROMPT ETAPE 11.1 Desactivation
+EXPLAIN PLAN FOR 
+UPDATE glpi_users SET is_active = 0 WHERE pseudo = 'TECH01' AND entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 11.2 Recuperer materiel
+EXPLAIN PLAN FOR
+SELECT id FROM glpi_computers WHERE users_id_tech = 42
+UNION ALL
+SELECT id FROM glpi_printers WHERE users_id_tech = 42;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PROMPT ETAPE 11.3 Chercher autres techs
+EXPLAIN PLAN FOR
+SELECT DISTINCT c.users_id_tech FROM glpi_computers c JOIN glpi_equipments eq ON eq.id = c.id
+WHERE eq.entities_id = 1 AND c.users_id_tech IS NOT NULL AND c.users_id_tech != 42
+UNION
+SELECT DISTINCT p.users_id_tech FROM glpi_printers p JOIN glpi_equipments eq ON eq.id = p.id
+WHERE eq.entities_id = 1 AND p.users_id_tech IS NOT NULL AND p.users_id_tech != 42;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 12. supprimer_utilisateur_lambda
+PROMPT =========================================================================
+
+PROMPT ETAPE 12.1 Desactivation
+EXPLAIN PLAN FOR 
+UPDATE glpi_users SET is_active = 0 WHERE pseudo = 'ETUD01' AND entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 13. VUE LOGIQUE : Tableau de bord
+PROMPT =========================================================================
+
+PROMPT ETAPE 13.1 SELECT GROUP BY
+EXPLAIN PLAN FOR
+SELECT u.pseudo, COUNT(c.id) AS nb_ordinateurs FROM glpi_users u JOIN glpi_computers c ON u.id = c.users_id_tech JOIN glpi_equipments eq ON eq.id = c.id
+WHERE eq.entities_id = 1 GROUP BY u.pseudo;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+PROMPT =========================================================================
+PROMPT 14. CURSEUR DE RAPPORT
+PROMPT =========================================================================
+
+PROMPT ETAPE 14.1 SELECT 6 JOINTURES
+EXPLAIN PLAN FOR
+SELECT u.realname, u.firstname, p.name AS profile_name, e.itemtype, e.name AS equip_name, l.name AS location_name
+FROM glpi_users u
+LEFT JOIN glpi_profiles_users pu ON u.id = pu.users_id
+LEFT JOIN glpi_profiles p ON pu.profiles_id = p.id
+LEFT JOIN glpi_computers c ON u.id = c.users_id_tech
+LEFT JOIN glpi_equipments e ON c.id = e.id
+LEFT JOIN glpi_locations l ON e.locations_id = l.id
+WHERE u.entities_id = 1;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+SPOOL OFF;
 
