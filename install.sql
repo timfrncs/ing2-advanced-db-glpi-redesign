@@ -1,7 +1,7 @@
 -- =============================================================================
 -- GLPI CY Tech - Script d installation complet
 -- Fichier    : install.sql
--- Prerequis  : etre connecte en SYSDBA sur XEPDB1 + fix file paths to project in this file
+-- Prerequis  : etre connecte en SYSDBA sur XEPDB1 + fix file paths to project in this file + ajuster les chemins vers le projet
 -- Resultat   : base entierement deployee + donnees de test + affichage des tables
 -- =============================================================================
 
@@ -216,8 +216,6 @@ SELECT 'glpi_history (>0)',                   0,              COUNT(*) FROM glpi
 ORDER BY 1;
 
 PROMPT
-PROMPT  Note glpi_profilerights : attendu=0 est un placeholder, verifier reel > 0
-PROMPT  Note glpi_history       : attendu=0 est un placeholder, verifier reel > 0
 PROMPT
 PROMPT ================================================================
 PROMPT  INSTALLATION TERMINEE
