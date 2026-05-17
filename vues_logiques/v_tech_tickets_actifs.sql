@@ -51,5 +51,6 @@ JOIN glpi_entities                               e     ON e.id           = et.en
 LEFT JOIN glpi_locations                         l     ON l.id           = et.locations_id
 LEFT JOIN glpi_ipaddresses                       ip    ON ip.id          = et.ipaddresses_id
 JOIN glpi_tickets                                t     ON t.equipment_id = et.equipment_id
+                                                       AND t.entities_id   = et.entities_id
 LEFT JOIN glpi_users                             u_dem ON u_dem.id       = t.users_id
 WHERE t.status IN (1, 2, 3);
