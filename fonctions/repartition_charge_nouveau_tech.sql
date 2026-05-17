@@ -37,10 +37,11 @@ CREATE OR REPLACE FUNCTION repartition_charge_nouveau_tech(
         FETCH FIRST p_nb ROWS ONLY;
 
 BEGIN
-    -- Compter le total d'équipements du site
+    -- Compter uniquement les ordinateurs (seuls équipements redistribuables via cur_equip_eligible)
     SELECT COUNT(*) INTO v_nb_equip
     FROM glpi_equipments
-    WHERE entities_id = p_entities_id;
+    WHERE entities_id = p_entities_id
+    AND itemtype = 'Computer';
 
     -- Compter les techniciens actuels (avant ajout du nouveau)
     SELECT COUNT(DISTINCT users_id_tech) INTO v_nb_tech
