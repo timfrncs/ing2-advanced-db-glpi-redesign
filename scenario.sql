@@ -28,6 +28,39 @@ SET PAGESIZE     80
 SET FEEDBACK     ON
 WHENEVER SQLERROR CONTINUE
 
+-- Formatage compact des colonnes (applique a toutes les requetes du scenario)
+COLUMN site                   FORMAT A8
+COLUMN itemtype               FORMAT A10
+COLUMN nb                     FORMAT 9999
+COLUMN statut                 FORMAT A12
+COLUMN ticket_id              FORMAT 9999999
+COLUMN sujet_ticket           FORMAT A38
+COLUMN sujet                  FORMAT A38
+COLUMN equipement             FORMAT A12
+COLUMN equipement_concerne    FORMAT A12
+COLUMN adresse_ip             FORMAT A15
+COLUMN statut_ticket          FORMAT A12
+COLUMN demandeur              FORMAT A14
+COLUMN jours_ouverts          FORMAT 999
+COLUMN technicien             FORMAT A22
+COLUMN technicien_responsable FORMAT A22
+COLUMN nb_computers           FORMAT 999
+COLUMN nb_printers            FORMAT 999
+COLUMN total_equipements      FORMAT 999
+COLUMN nb_tickets_ouverts     FORMAT 9999
+COLUMN nb_nouveaux            FORMAT 9999
+COLUMN nb_en_cours            FORMAT 9999
+COLUMN nb_en_attente          FORMAT 9999
+COLUMN pseudo                 FORMAT A15
+COLUMN firstname              FORMAT A14
+COLUMN realname               FORMAT A14
+COLUMN is_active              FORMAT 9
+COLUMN entities_id            FORMAT 9
+COLUMN name                   FORMAT A12
+COLUMN salle                  FORMAT A8
+COLUMN element                FORMAT A28
+COLUMN nb_inactifs_cergy      FORMAT 9999
+
 
 -- =============================================================================
 -- ETAT INITIAL : verification avant le scenario
@@ -273,12 +306,13 @@ END;
 /
 
 -- Verification : plus de tickets actifs pour FMARTIN
-PROMPT [Vue] v_tech_tickets_actifs apres resolution (doit etre vide)
+PROMPT [Vue] v_tech_tickets_actifs apres resolution (SER-DEMO-PC-001 resolu ; tickets initiaux sur EQ-100xx redistribues restent actifs)
 BEGIN
     DBMS_SESSION.SET_IDENTIFIER('FMARTIN|CERGY');
 END;
 /
-SELECT COUNT(*) AS tickets_actifs_fmartin FROM v_tech_tickets_actifs;
+SELECT ticket_id, equipement, statut_ticket, jours_ouverts
+FROM   v_tech_tickets_actifs;
 
 
 -- =============================================================================
