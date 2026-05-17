@@ -6,8 +6,8 @@ CONNECT / AS SYSDBA
 
 ALTER SESSION SET CONTAINER = XEPDB1;
 
-@[path_to_the_project]ing2-advanced-db-glpi-redesign/cleanup.sql
+@[path_to_the_project]/ing2-advanced-db-glpi-redesign/cleanup.sql
 
-@[path_to_the_project]/Projet/ing2-advanced-db-glpi-redesign/install.sql
+@[path_to_the_project]/ing2-advanced-db-glpi-redesign/install.sql
 
 @[path_to_the_project]/ing2-advanced-db-glpi-redesign/scenario.sql
