@@ -2,11 +2,10 @@
 -- GLPI CY Tech - Scenario de demonstration complet
 -- Fichier    : scenario.sql
 -- Connexion  : GLPI_OWNER (procedures AUTHID DEFINER, droits du schema)
--- Prerequis  : install.sql + donnees_initiales.sql executes
+-- Prerequis  : install.sql execute
 --
 -- Objectif   : simuler une journee de travail sur les deux campus,
---              exercer les 14 procedures metier, interroger toutes les vues,
---              et mesurer les plans d execution (EXPLAIN PLAN).
+--              exercer les 14 procedures metier, interroger toutes les vues.
 --
 -- CLIENT_IDENTIFIER format 'PSEUDO|SITE' simule les comptes applicatifs.
 -- Les procedures l utilisent pour identifier le site et l utilisateur courant.
@@ -28,7 +27,8 @@ SET PAGESIZE     80
 SET FEEDBACK     ON
 WHENEVER SQLERROR CONTINUE
 
--- Formatage compact des colonnes (applique a toutes les requetes du scenario)
+-- Formatage compact des colonnes (applique a toutes les requetes du scenario pour un 
+-- rendu clair dans la console sqlplus)
 COLUMN site                   FORMAT A8
 COLUMN itemtype               FORMAT A10
 COLUMN nb                     FORMAT 9999
