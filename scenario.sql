@@ -339,14 +339,14 @@ FROM   v_admin_tickets_en_retard;
 PROMPT [Vue] v_admin_equipements_inactifs (En stock / En reparation / Rebut)
 SELECT equipement, itemtype, salle, statut
 FROM   v_admin_equipements_inactifs
-ORDER BY statut, equipement
-FETCH FIRST 10 ROWS ONLY;
+ORDER BY statut, equipement;
+
 
 PROMPT        -> total equipements inactifs Cergy :
 SELECT COUNT(*) AS nb_inactifs_cergy FROM v_admin_equipements_inactifs;
 
 PROMPT [MV]  mv_charge_techniciens (donnees PRE-AGREGEES - etat au dernier refresh)
-PROMPT       Note : FMARTIN n apparait pas encore (MV pas encore rafraichie)
+PROMPT       Etat : refresh [2b] de l ACTE 1 - les 3 equip ajoutes en [4+5+6] pas encore comptabilises
 SELECT technicien, site, nb_computers, nb_printers, total_equipements
 FROM   mv_charge_techniciens
 WHERE  site = 'CERGY'
@@ -359,7 +359,7 @@ BEGIN
 END;
 /
 
-PROMPT [MV]  mv_charge_techniciens apres refresh (FMARTIN doit apparaitre)
+PROMPT [MV]  mv_charge_techniciens apres refresh (FMARTIN : +3 equip [4+5+6] maintenant comptabilises)
 SELECT technicien, site, nb_computers, nb_printers, total_equipements
 FROM   mv_charge_techniciens
 WHERE  site = 'CERGY'
