@@ -83,14 +83,25 @@ BEGIN
     -- 5. Désactivation ORACLE (La sécurité vitale)
     -- ----------------------------------------------------
     BEGIN
-        -- Reconstitution du compte Oracle (ex: JDUPONT_CERGY)
+        -- Cas standard        : pseudo sans site -> FMARTIN_CERGY
+        -- Cas copie cross-site : pseudo contient deja le site -> CBERNARD_CERGY
+        --   => on essaie pseudo_SITE en premier ; si ORA-01918 (inexistant),
+        --      on retente avec le pseudo tel quel (le site est deja inclus).
         v_oracle_user := UPPER(p_pseudo) || '_' || UPPER(v_site);
-        
-        -- Verrouillage du compte système
-        EXECUTE IMMEDIATE 'ALTER USER ' || v_oracle_user || ' ACCOUNT LOCK';
+        BEGIN
+            EXECUTE IMMEDIATE 'ALTER USER ' || v_oracle_user || ' ACCOUNT LOCK';
+        EXCEPTION
+            WHEN OTHERS THEN
+                IF SQLCODE = -1918 THEN
+                    v_oracle_user := UPPER(p_pseudo);
+                    EXECUTE IMMEDIATE 'ALTER USER ' || v_oracle_user || ' ACCOUNT LOCK';
+                ELSE
+                    RAISE;
+                END IF;
+        END;
     EXCEPTION
         WHEN OTHERS THEN
-            ROLLBACK; -- On annule tout (même la redistribution) si on n'arrive pas à le bloquer sur Oracle
+            ROLLBACK;
             RAISE_APPLICATION_ERROR(-20105, 'Erreur lors du verrouillage du compte Oracle. Opération totalement annulée : ' || SQLERRM);
     END;
 
