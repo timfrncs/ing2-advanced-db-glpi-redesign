@@ -1,8 +1,7 @@
 -- =============================================================================
 -- GLPI CY Tech - Script d installation complet
 -- Fichier    : install.sql
--- Usage      : sqlplus sys/"password"@//localhost:1521/XEPDB1 as sysdba @install.sql
--- Prerequis  : etre connecte en SYSDBA sur XEPDB1
+-- Prerequis  : etre connecte en SYSDBA sur XEPDB1 + fix file paths to project in this file
 -- Resultat   : base entierement deployee + donnees de test + affichage des tables
 -- =============================================================================
 
