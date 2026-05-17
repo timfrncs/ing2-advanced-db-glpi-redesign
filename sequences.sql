@@ -72,7 +72,6 @@ CREATE SEQUENCE seq_locations_name
 
 -- 5. ADRESSES IP (partie hote : 10.1.0.X pour Cergy, 10.2.0.X pour Pau)
 -- CYCLE : le /24 ne couvre que 254 hotes ; le cycle est intentionnel
--- (en pratique la plage est dimensionnee pour ne jamais en manquer)
 CREATE SEQUENCE seq_ip_host_cergy
     START WITH 1
     INCREMENT BY 1
