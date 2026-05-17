@@ -1,13 +1,12 @@
 -- =============================================================================
--- GLPI CY Tech - Donnees initiales
+-- GLPI CY Tech - Donnees initiales + jeu tese
 -- Fichier    : donnees_initiales.sql
 -- Connexion  : GLPI_OWNER
--- Dependances: schema.sql + sequences.sql executes avant
 -- Contenu    : donnees necessaires au fonctionnement des procedures AVANT
 --              le scenario. Sans ces donnees, ajouter_admin, ajouter_technicien
 --              et ajouter_equipement echouent immediatement.
 -- =============================================================================
--- Ce fichier NE contient PAS de donnees de test (users, equipements, tickets).
+-- Ce fichier contient quelques donnees de test (users, equipements, tickets).
 -- Ces donnees sont generees dans scenario.sql via les procedures metier.
 -- =============================================================================
 
@@ -148,8 +147,6 @@ INSERT INTO glpi_networks (name, entities_id) VALUES ('10.2.0.0/24', 2);
 -- 8 salles par site, noms fixes LOC-1..LOC-8 (Cergy) et LOC-9..LOC-16 (Pau).
 -- uk_loc_ent_name est composite (entities_id, name) : LOC-x peut coexister
 -- sur les deux sites sans collision.
--- Bloc PL/SQL pour coherence avec le reste du fichier et pour eviter les
--- problemes SQL*Plus avec NEXTVAL dans une expression VALUES directe.
 
 BEGIN
     -- Cergy (entities_id = 1)
