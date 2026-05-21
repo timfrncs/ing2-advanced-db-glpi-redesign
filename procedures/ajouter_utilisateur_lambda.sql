@@ -7,7 +7,7 @@ CREATE OR REPLACE PROCEDURE ajouter_utilisateur_lambda(
     v_entities_id   NUMBER;
     v_site          VARCHAR2(50);
     v_count         NUMBER;
-    v_i             NUMBER := 1; -- Utilisé pour gérer les homonymes proprement
+    v_i             NUMBER := 1; -- Utilisé pour gérer les homonymes 
 BEGIN
     -- ----------------------------------------------------
     -- 1. Contrôle de sécurité sur l'appelant
@@ -17,7 +17,7 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20010, 'Privilège insuffisant : Seul un administrateur connecté à un site peut créer un utilisateur.');
     END IF;
 
-    -- Extraction propre du nom du site pour le message d'erreur au cas où
+    -- Extraction  du nom du site pour le message d'erreur au cas oùù
     v_site := SUBSTR(
         SYS_CONTEXT('USERENV', 'CLIENT_IDENTIFIER'),
         INSTR(SYS_CONTEXT('USERENV', 'CLIENT_IDENTIFIER'), '|') + 1
@@ -41,7 +41,7 @@ BEGIN
     v_pseudo_base := UPPER(SUBSTR(p_firstname, 1, 1)) || UPPER(p_realname);
     v_pseudo := v_pseudo_base;
 
-    -- Boucle infinie sécurisée qui teste jusqu'à trouver un pseudo totalement libre
+    
     LOOP
         SELECT COUNT(*) INTO v_count FROM glpi_users WHERE pseudo = v_pseudo;
         EXIT WHEN v_count = 0;
