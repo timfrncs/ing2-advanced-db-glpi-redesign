@@ -28,7 +28,7 @@ BEGIN
     END;
 
     BEGIN
-        -- On récupère aussi l'ID pour s'en resservir juste après !
+        -- On récupère aussi l'ID 
         SELECT id, firstname, realname, entities_id
         INTO v_user_id, v_firstname, v_realname, v_old_ent
         FROM glpi_users
@@ -70,8 +70,6 @@ BEGIN
         INSERT INTO glpi_users (pseudo, firstname, realname, entities_id, is_active)
         VALUES (v_new_pseudo, v_firstname, v_realname, v_entities_id, 1);
         
-        -- NB : Pas d'insertion dans glpi_profiles_users ni de CREATE USER Oracle, 
-        -- car c'est un simple étudiant (Lambda).
     EXCEPTION
         WHEN OTHERS THEN
             ROLLBACK;
