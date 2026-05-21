@@ -10,7 +10,7 @@ CREATE OR REPLACE PROCEDURE ajouter_admin(
     v_count         NUMBER;
     
     v_user_id       NUMBER; 
-    v_profile_id    NUMBER; -- NOUVEAU : Pour stocker l'ID du profil Admin
+    v_profile_id    NUMBER; --  Pour stocker l'ID du profil Admin
     v_pseudo_base   VARCHAR2(255);
     v_i             NUMBER := 1;
 BEGIN
@@ -76,7 +76,7 @@ BEGIN
         VALUES (v_pseudo, p_firstname, p_realname, v_entities_id, 1)
         RETURNING id INTO v_user_id;
 
-        -- On le lie à son profil (SANS le 0 !)
+        -- On le lie à son profil 
         INSERT INTO glpi_profiles_users (users_id, profiles_id, entities_id)
         VALUES (v_user_id, v_profile_id, v_entities_id);
         
@@ -104,7 +104,7 @@ BEGIN
             RAISE_APPLICATION_ERROR(-20015, 'Erreur lors de la création de l''utilisateur Oracle. Action annulée. Cause : ' || SQLERRM);
     END;
 
-    -- Si on arrive ici, tout s'est bien passé
+    -- Si on arrive ici, tout okayy
     COMMIT;
     DBMS_OUTPUT.PUT_LINE('Admin créé : ' || v_pseudo || '_' || v_site);
 END;
