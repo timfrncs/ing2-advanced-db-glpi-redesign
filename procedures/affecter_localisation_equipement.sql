@@ -30,7 +30,6 @@ BEGIN
         AND entities_id   = v_entities_id;
     EXCEPTION
         WHEN NO_DATA_FOUND THEN
-            -- Le message est maintenant ultra-précis !
             RAISE_APPLICATION_ERROR(-20092, 'Erreur : La salle [' || p_salle_name || '] est introuvable sur le même site que l''équipement.');
         -- On ajoute une sécurité au cas où deux salles s'appelleraient pareil sur le même site
         WHEN TOO_MANY_ROWS THEN
@@ -51,7 +50,7 @@ BEGIN
 EXCEPTION
     -- Gestion globale pour toute autre erreur SQL inattendue (ex: base déconnectée)
     WHEN OTHERS THEN
-        ROLLBACK; -- TRÈS IMPORTANT : On annule tout s'il y a un crash grave
+        ROLLBACK; --  On annule tout s'il y a un crash grave
         RAISE_APPLICATION_ERROR(-20099, 'Erreur inattendue : ' || SQLERRM);
 END;
 /
