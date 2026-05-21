@@ -88,7 +88,7 @@ BEGIN
                 RAISE_APPLICATION_ERROR(-20035, 'Erreur : Technicien introuvable ou inactif.');
         END;
 
-        -- Optimisation de la requête (Plus de UNION ALL lourd)
+        
         SELECT COUNT(*) INTO v_tech_equip
         FROM glpi_equipments eq
         LEFT JOIN glpi_computers c ON c.id = eq.id
