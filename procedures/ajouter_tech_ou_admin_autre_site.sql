@@ -85,7 +85,7 @@ BEGIN
             RAISE_APPLICATION_ERROR(-20126, 'Erreur lors de l''écriture dans les tables GLPI : ' || SQLERRM);
     END;
 
-    -- Créer le compte Oracle (EN DERNIER - Sans le point-virgule après le BEGIN)
+    -- Créer le compte Oracle (EN DERNIER 
     BEGIN 
         EXECUTE IMMEDIATE
             'CREATE USER ' || v_new_pseudo ||
@@ -102,7 +102,7 @@ BEGIN
 
     EXCEPTION
         WHEN OTHERS THEN
-            -- Le ROLLBACK magique : efface les inserts du bloc précédent si Oracle échoue ici
+            -- Le ROLLBACK  : efface les inserts du bloc précédent si Oracle échoue ici
             ROLLBACK;
             RAISE_APPLICATION_ERROR(-20127, 'Erreur critique lors de la création du compte Oracle. Opération d''écriture annulée : ' || SQLERRM);
     END;
